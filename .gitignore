@@ -1,0 +1,67 @@
+# Rust build artifacts
+/target/
+**/target/
+
+# Cargo lock for libraries (keep for binary crates)
+# Cargo.lock is committed for this project (binary)
+
+# eBPF build artifacts
+crates/tlapix-ebpf/target/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment and secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+acme-credentials.json
+
+# SQLite databases (runtime data)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+tlapix.sqlite
+
+# ONNX models (too large for git)
+*.onnx
+
+# Log files
+*.log
+logs/
+
+# OS files
+Thumbs.db
+Desktop.ini
+
+# Test artifacts
+*.profraw
+*.profdata
+lcov.info
+coverage/
+proptest-regressions/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Certificate inventory (contains sensitive data)
+inventory.json
+
+# Config with secrets (sample config is committed)
+/etc/tlapix/
+tlapix.toml
+!config/tlapix.toml
+
+#imagenotneeded
+images/

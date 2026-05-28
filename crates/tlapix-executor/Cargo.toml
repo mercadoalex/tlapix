@@ -1,0 +1,29 @@
+[package]
+name = "tlapix-executor"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tlapix-common = { path = "../tlapix-common" }
+tokio = { workspace = true }
+instant-acme = { workspace = true }
+rusqlite = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+async-trait = "0.1"
+reqwest = { workspace = true }
+rcgen = "0.13"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+aya = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio = { workspace = true, features = ["test-util"] }
+tempfile = "3"

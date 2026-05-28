@@ -1,0 +1,25 @@
+[package]
+name = "tlapix-analyzer"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+tlapix-common = { path = "../tlapix-common" }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+ort = { workspace = true }
+instant-acme = { workspace = true }
+rusqlite = { workspace = true }
+reqwest = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+tokio = { workspace = true, features = ["test-util"] }
+tempfile = "3"

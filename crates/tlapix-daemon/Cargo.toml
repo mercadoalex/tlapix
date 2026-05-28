@@ -1,0 +1,41 @@
+[package]
+name = "tlapix-daemon"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "tlapix"
+path = "src/main.rs"
+
+[dependencies]
+tlapix-common = { path = "../tlapix-common" }
+tlapix-collector = { path = "../tlapix-collector" }
+tlapix-analyzer = { path = "../tlapix-analyzer" }
+tlapix-executor = { path = "../tlapix-executor" }
+tokio = { workspace = true }
+axum = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+tonic = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+tokio-util = { workspace = true }
+reqwest = { workspace = true }
+chrono = { workspace = true }
+hex = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full", "test-util"] }
+tokio-util = { workspace = true }
+wiremock = "0.6"
+uuid = { workspace = true }
+chrono = { workspace = true }
+tempfile = "3"
+proptest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

@@ -1,0 +1,151 @@
+# Tlapix Certificate Guardian - Configuration File
+#
+# This is the main configuration file for the Tlapix daemon.
+# Copy this file to /etc/tlapix/tlapix.toml or specify a custom path
+# with: tlapix --config /path/to/config.toml
+
+# ---------------------------------------------------------------------------
+# Collector Layer
+# ---------------------------------------------------------------------------
+# The Collector attaches eBPF programs to network interfaces to passively
+# observe TLS handshakes and extract certificate metadata.
+
+[collector]
+# Network interfaces to monitor for TLS handshakes.
+# Use ["eth0"] for a single interface or ["eth0", "lo"] for multiple.
+interfaces = ["eth0"]
+
+# Size of the BPF ring buffer in megabytes (default: 16).
+# Increase for high-traffic environments (>10K handshakes/sec).
+ring_buffer_size_mb = 16
+
+# Maximum number of metadata records to buffer locally when the Analyzer
+# is unavailable (default: 10,000). Oldest records are discarded when full.
+local_buffer_capacity = 10000
+
+# Number of days to retain certificate metadata before eligible for
+# deletion (default: 90, per requirement 2.6).
+metadata_retention_days = 90
+
+# ---------------------------------------------------------------------------
+# Analyzer Layer
+# ---------------------------------------------------------------------------
+# The Analyzer performs AI-driven anomaly detection, renewal prediction,
+# and shadow certificate identification.
+
+[analyzer]
+# Path to the ONNX model file for AI-powered anomaly detection.
+# If the model is unavailable, the Analyzer falls back to rule-based detection.
+ai_model_path = "/opt/tlapix/models/anomaly.onnx"
+
+# Timeout in seconds for AI model backend connection (default: 5).
+# If exceeded, falls back to rule-based detection.
+ai_timeout_secs = 5
+
+# Interval in seconds between certificate inventory polls (default: 300 = 5 min).
+# Must not exceed 300 seconds per requirement 9.2.
+inventory_poll_interval_secs = 300
+
+# Interval in hours between renewal prediction re-evaluations (default: 24).
+prediction_reevaluation_hours = 24
+
+# Failure probability threshold that triggers a "renew" action (default: 0.7).
+# Per requirement 4.5.
+renewal_threshold_probability = 0.7
+
+# Certificate inventory source for shadow certificate detection.
+# Supports "file" or "api" types.
+[analyzer.inventory_source]
+type = "file"
+path = "/etc/tlapix/inventory.json"
+
+# For API-based inventory:
+# [analyzer.inventory_source]
+# type = "api"
+# endpoint = "https://inventory.example.com/api/v1/certs"
+# auth_token = "your-api-token"
+
+# ---------------------------------------------------------------------------
+# Executor Layer
+# ---------------------------------------------------------------------------
+# The Executor writes action directives to BPF maps and handles ACME renewal.
+
+[executor]
+# Maximum number of entries per BPF action map (default: 10,000).
+# Per requirement 7.3.
+max_map_entries = 10000
+
+# Maximum total BPF map memory allocation in megabytes (default: 64).
+# Per requirement 7.3.
+max_map_memory_mb = 64
+
+# Hours after which a directive expires if the certificate is not seen
+# in traffic (default: 72). Per requirement 6.5.
+directive_expiry_hours = 72
+
+# Maximum number of retry attempts for failed actions (default: 3).
+# Per requirement 6.7.
+retry_max_attempts = 3
+
+# Base delay in milliseconds for exponential backoff retries (default: 100).
+# Per requirement 7.4.
+retry_base_ms = 100
+
+# Webhook endpoints for alert delivery.
+# Each webhook receives HTTP POST with JSON payload for action events.
+# Supports PagerDuty, OpsGenie, and Slack integrations.
+webhooks = []
+
+# Example webhook configuration:
+# [[executor.webhooks]]
+# endpoint = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+# timeout_secs = 10
+# retry_max = 3
+# retry_base_secs = 1
+
+# Optional ACME configuration for automated certificate renewal.
+# Uncomment to enable:
+# [executor.acme_config]
+# directory_url = "https://acme-v02.api.letsencrypt.org/directory"
+# contact_email = "admin@example.com"
+# credentials_path = "/etc/tlapix/acme-credentials.json"
+
+# ---------------------------------------------------------------------------
+# Observability Layer
+# ---------------------------------------------------------------------------
+# Metrics export and audit logging configuration.
+
+[observability]
+# OTLP exporter endpoint URL. Supports Datadog, Dynatrace, Splunk, Grafana
+# via OTLP-compatible endpoints.
+# otlp_endpoint = "http://localhost:4317"
+
+# Authentication token for the OTLP endpoint (optional).
+# otlp_auth_token = "your-otlp-token"
+
+# Interval in seconds between OTLP metric exports (default: 60).
+# Per requirement 8.3: metrics updated within 60 seconds of event.
+otlp_export_interval_secs = 60
+
+# Socket address for the Prometheus metrics endpoint.
+# Uncomment to enable Prometheus scraping.
+# prometheus_bind = "0.0.0.0:9090"
+
+# StatsD endpoint for metric export to legacy monitoring infrastructure.
+# Uncomment to enable StatsD.
+# statsd_endpoint = "localhost:8125"
+
+# Number of days to retain audit log entries (default: 90).
+# Per requirement 8.5.
+audit_retention_days = 90
+
+# ---------------------------------------------------------------------------
+# Web UI (Optional)
+# ---------------------------------------------------------------------------
+# Lightweight built-in web UI for standalone deployments.
+# Displays certificate inventory, active anomalies, recent actions,
+# and current predictions.
+
+# Uncomment to enable the web UI:
+# [web_ui]
+# bind = "0.0.0.0:8080"

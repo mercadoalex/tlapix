@@ -1,0 +1,76 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/tlapix-common",
+    "crates/tlapix-collector",
+    "crates/tlapix-analyzer",
+    "crates/tlapix-executor",
+    "crates/tlapix-daemon",
+    "xtask",
+]
+
+# tlapix-ebpf is excluded because it targets bpfel-unknown-none (no_std)
+exclude = ["crates/tlapix-ebpf"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Tlapix Contributors"]
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# eBPF userspace (Linux-only)
+aya = { version = "0.13", features = ["async_tokio"] }
+aya-log = "0.2"
+
+# NOTE: aya and aya-log are Linux-only. Crates using them must gate
+# the dependency with #[cfg(target_os = "linux")] or use target-specific deps.
+
+# Database
+rusqlite = { version = "0.31", features = ["bundled"] }
+
+# Certificate parsing
+x509-parser = "0.16"
+
+# AI/ML inference
+ort = "2.0.0-rc.12"
+
+# ACME client
+instant-acme = "0.7"
+
+# Observability
+opentelemetry = { version = "0.24", features = ["metrics"] }
+opentelemetry_sdk = { version = "0.24", features = ["rt-tokio", "metrics"] }
+opentelemetry-otlp = { version = "0.17", features = ["metrics", "grpc-tonic"] }
+tonic = "0.12"
+
+# Web framework
+axum = "0.7"
+
+# Testing
+proptest = "1"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# LRU cache
+lru = "0.12"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Utilities
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+sha2 = "0.10"
+hex = "0.4"
