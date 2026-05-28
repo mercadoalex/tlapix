@@ -30,7 +30,7 @@ This represents approximately 8x more certificate lifecycle work than organizati
 
 ### Why Tlapix Exists
 
-Current certificate management tools are reactive — they alert after expiry or near-expiry — rather than proactive in predicting and preventing failures. No existing solution combines passive traffic observation via eBPF, AI-driven prediction, and autonomous action execution through BPF maps. The 47-day mandate makes autonomous certificate lifecycle management not merely desirable but essential. Tlapix demonstrates that a solo developer armed with eBPF, AI, and BPF maps can build what previously required enterprise-scale teams and budgets.
+Current certificate management tools are reactive — they alert after expiry or near-expiry — rather than proactive in predicting and preventing failures. No existing solution combines passive traffic observation via eBPF, AI-driven prediction, and autonomous action execution through BPF maps. The 47-day mandate makes autonomous certificate lifecycle management not merely desirable but essential. Tlapix demonstrates that a small, focused team armed with eBPF, AI, and BPF maps can build what previously required enterprise-scale organizations and budgets.
 
 ## Glossary
 

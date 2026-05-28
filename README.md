@@ -6,7 +6,7 @@ Tlapix is an autonomous certificate lifecycle management system that uses **eBPF
 
 ![Tlapix](./Tlapix07.png)
 
-**One development. Three layers. Zero expired certificates.**
+**One binary. Three layers. Zero expired certificates.**
 
 ---
 
@@ -224,7 +224,7 @@ bind = "0.0.0.0:8080"
 | Observability | **OpenTelemetry** | Vendor-neutral, OTLP export to any backend |
 | Web UI | **axum + htmx** | Lightweight, server-rendered, minimal JS |
 
-**Single language. Single binary. Single developer.**
+**Single language. Single binary. Lean team friendly.**
 
 ---
 
@@ -255,7 +255,7 @@ tlapix/
 | AI prediction | ✅ Local ONNX | ❌ | ❌ | ❌ |
 | Autonomous action | ✅ Kernel speed | ❌ | Partial | Partial |
 | Zero overhead | ✅ <1% CPU | N/A | Agent-based | Agent-based |
-| Solo developer viable | ✅ | ✅ | ❌ | ❌ |
+| Small team viable | ✅ | ✅ | ❌ | ❌ |
 | 47-day mandate ready | ✅ | Partial | ✅ | ✅ |
 | Open source | ✅ | ✅ | ❌ | ❌ |
 

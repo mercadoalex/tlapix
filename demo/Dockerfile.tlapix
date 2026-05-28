@@ -1,0 +1,59 @@
+# Multi-stage build for Tlapix Certificate Guardian
+#
+# Stage 1: Build the Rust binary
+# Stage 2: Minimal runtime with eBPF support
+
+# ─────────────────────────────────────────────────────────────────
+# Build stage
+# ─────────────────────────────────────────────────────────────────
+FROM rust:1.79-bookworm AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    clang \
+    llvm \
+    libelf-dev \
+    linux-headers-generic \
+    pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy workspace files
+COPY Cargo.toml Cargo.lock ./
+COPY crates/ crates/
+COPY xtask/ xtask/
+COPY .cargo/ .cargo/
+
+# Build the userspace daemon (release mode)
+RUN cargo build --release --bin tlapix
+
+# ─────────────────────────────────────────────────────────────────
+# Runtime stage
+# ─────────────────────────────────────────────────────────────────
+FROM debian:bookworm-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libelf1 \
+    iproute2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create tlapix user and directories
+RUN useradd -r -s /bin/false tlapix \
+    && mkdir -p /etc/tlapix /var/lib/tlapix /opt/tlapix/models
+
+# Copy the binary
+COPY --from=builder /app/target/release/tlapix /usr/local/bin/tlapix
+
+# Default config location
+VOLUME ["/etc/tlapix"]
+
+# Expose ports
+EXPOSE 8080 9090
+
+# Run as root (required for eBPF)
+# In production, use capabilities instead of full root
+ENTRYPOINT ["tlapix"]
+CMD ["--config", "/etc/tlapix/tlapix.toml"]

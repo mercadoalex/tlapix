@@ -1,0 +1,47 @@
+# Tlapix Demo Configuration
+#
+# Uses compressed time thresholds so the full certificate lifecycle
+# can be observed in under 5 minutes.
+
+[collector]
+interfaces = ["eth0"]
+ring_buffer_size_mb = 8
+local_buffer_capacity = 1000
+metadata_retention_days = 1  # Short retention for demo
+
+[analyzer]
+ai_model_path = "/opt/tlapix/models/anomaly.onnx"  # Will fallback to rules
+ai_timeout_secs = 2
+
+# Compressed thresholds for demo:
+inventory_poll_interval_secs = 30       # Poll every 30s (prod: 300s)
+prediction_reevaluation_hours = 0       # Re-evaluate every cycle (prod: 24h)
+renewal_threshold_probability = 0.5     # Lower threshold for faster triggers
+
+[analyzer.inventory_source]
+type = "file"
+path = "/etc/tlapix/inventory.json"
+
+[executor]
+max_map_entries = 1000
+max_map_memory_mb = 16
+directive_expiry_hours = 1              # Expire after 1h (prod: 72h)
+retry_max_attempts = 3
+retry_base_ms = 100
+
+# Webhook to stdout for demo visibility
+webhooks = []
+
+# ACME via local Pebble server
+[executor.acme_config]
+directory_url = "https://pebble:14000/dir"
+contact_email = "demo@tlapix.local"
+credentials_path = "/tmp/acme-demo-creds.json"
+
+[observability]
+otlp_export_interval_secs = 10          # Export every 10s for demo
+prometheus_bind = "0.0.0.0:9090"
+audit_retention_days = 1
+
+[web_ui]
+bind = "0.0.0.0:8080"

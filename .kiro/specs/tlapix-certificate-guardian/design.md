@@ -8,7 +8,7 @@ Tlapix Certificate Guardian is a three-layer autonomous certificate lifecycle ma
 
 - **Zero overhead**: eBPF programs observe TLS handshakes passively without modifying application traffic
 - **Safety first**: The kernel never executes dynamically generated code; only pre-verified BPF programs read action maps
-- **Solo developer feasibility**: Rust + Aya provides a single-language stack for both kernel and userspace code
+- **Lean team feasibility**: Rust + Aya provides a single-language stack for both kernel and userspace code
 - **47-day readiness**: Architecture handles 8x certificate lifecycle volume through autonomous renewal
 - **Observability-native**: OpenTelemetry as the primary telemetry backbone with multi-backend export
 

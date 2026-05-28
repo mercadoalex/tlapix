@@ -1,0 +1,127 @@
+# Tlapix Demo Environment
+#
+# Starts multiple TLS servers with different certificate scenarios
+# and a traffic generator that creates continuous TLS handshakes
+# for Tlapix to observe.
+#
+# Usage:
+#   docker compose up -d
+#   docker compose logs -f tlapix
+#   docker compose down
+
+services:
+  # ─────────────────────────────────────────────────────────────────
+  # Tlapix Certificate Guardian
+  # ─────────────────────────────────────────────────────────────────
+  tlapix:
+    build:
+      context: ..
+      dockerfile: demo/Dockerfile.tlapix
+    cap_add:
+      - NET_ADMIN
+      - BPF
+      - SYS_ADMIN
+      - PERFMON
+    volumes:
+      - ./config/tlapix-demo.toml:/etc/tlapix/tlapix.toml:ro
+      - ./inventory.json:/etc/tlapix/inventory.json:ro
+    ports:
+      - "8080:8080"   # Web UI
+      - "9090:9090"   # Prometheus metrics
+    networks:
+      - demo-net
+    depends_on:
+      - tls-server-good
+      - tls-server-expiring
+      - tls-server-weak
+      - tls-server-shadow
+
+  # ─────────────────────────────────────────────────────────────────
+  # TLS Servers (one per scenario)
+  # ─────────────────────────────────────────────────────────────────
+
+  # Good certificate — valid, strong key, in inventory
+  tls-server-good:
+    image: nginx:alpine
+    volumes:
+      - ./certs/good/server.crt:/etc/nginx/ssl/server.crt:ro
+      - ./certs/good/server.key:/etc/nginx/ssl/server.key:ro
+      - ./nginx/good.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - demo-net
+
+  # Expiring certificate — valid but about to expire
+  tls-server-expiring:
+    image: nginx:alpine
+    volumes:
+      - ./certs/expiring/server.crt:/etc/nginx/ssl/server.crt:ro
+      - ./certs/expiring/server.key:/etc/nginx/ssl/server.key:ro
+      - ./nginx/expiring.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - demo-net
+
+  # Weak key certificate — RSA 1024 (triggers anomaly)
+  tls-server-weak:
+    image: nginx:alpine
+    volumes:
+      - ./certs/weak/server.crt:/etc/nginx/ssl/server.crt:ro
+      - ./certs/weak/server.key:/etc/nginx/ssl/server.key:ro
+      - ./nginx/weak.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - demo-net
+
+  # Shadow certificate — self-signed, not in inventory
+  tls-server-shadow:
+    image: nginx:alpine
+    volumes:
+      - ./certs/shadow/server.crt:/etc/nginx/ssl/server.crt:ro
+      - ./certs/shadow/server.key:/etc/nginx/ssl/server.key:ro
+      - ./nginx/shadow.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - demo-net
+
+  # ─────────────────────────────────────────────────────────────────
+  # Traffic Generator
+  # ─────────────────────────────────────────────────────────────────
+  traffic-generator:
+    image: curlimages/curl:latest
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        echo "🚀 Starting traffic generation..."
+        while true; do
+          # Hit each server to generate TLS handshakes
+          curl -sk https://tls-server-good:443/ -o /dev/null 2>/dev/null &
+          curl -sk https://tls-server-expiring:443/ -o /dev/null 2>/dev/null &
+          curl -sk https://tls-server-weak:443/ -o /dev/null 2>/dev/null &
+          curl -sk https://tls-server-shadow:443/ -o /dev/null 2>/dev/null &
+          wait
+          sleep 2
+        done
+    networks:
+      - demo-net
+    depends_on:
+      - tls-server-good
+      - tls-server-expiring
+      - tls-server-weak
+      - tls-server-shadow
+
+  # ─────────────────────────────────────────────────────────────────
+  # Pebble (Local ACME Server for renewal demos)
+  # ─────────────────────────────────────────────────────────────────
+  pebble:
+    image: letsencrypt/pebble:latest
+    command: pebble -config /etc/pebble/pebble-config.json
+    ports:
+      - "14000:14000"  # ACME directory
+      - "15000:15000"  # Management
+    environment:
+      - PEBBLE_VA_NOSLEEP=1
+      - PEBBLE_VA_ALWAYS_VALID=1
+    networks:
+      - demo-net
+
+networks:
+  demo-net:
+    driver: bridge
