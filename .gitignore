@@ -65,3 +65,12 @@ tlapix.toml
 
 #imagenotneeded
 images/
+
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl
+terraform/tlapix-key.pem
+terraform/terraform.tfvars

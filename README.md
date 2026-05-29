@@ -276,6 +276,51 @@ The 47-day certificate mandate makes this approach not optional but essential. W
 
 ---
 
+## Inference is the New App
+
+The core value of modern software is shifting from hand-coded logic to model predictions. In traditional software, developers write every rule. In AI-native systems, the model learns patterns from data — and the "app" becomes a thin orchestration layer around inference calls.
+
+**Traditional approach (rules only):**
+```
+if certificate.days_until_expiry < 30:
+    send_alert()
+```
+
+**Inference-native approach:**
+```
+prediction = model.infer(certificate_features)
+if prediction.anomaly_score > threshold:
+    take_action(prediction.recommended_action)
+```
+
+The developer doesn't write detection rules — the model learns them. Every feature becomes an inference call: search is embedding similarity, recommendations are ranking models, fraud detection is anomaly scoring. The pattern is always the same: data in → model → decision out.
+
+### How Tlapix Embodies This
+
+Tlapix is designed as a hybrid that evolves toward inference-native over time:
+
+| Layer | Approach | Role |
+|-------|----------|------|
+| Rules (always-on) | Deterministic logic | Safety net — catches known-bad with certainty |
+| AI (enhancement) | ONNX model inference | Growth engine — catches unknown-bad by learning "normal" |
+
+**Today**: Rules handle 100% of detections (no model trained yet).
+**After training**: AI handles 80% of detections, rules catch the 20% that need certainty.
+**Long-term**: The model IS the product. It catches patterns no rule could express — like "this renewal timing looks like the one that preceded the Spotify outage."
+
+### Why This Matters for Infrastructure
+
+If inference is the app, then inference infrastructure becomes critical:
+
+- **Latency** — every ms of inference delay = slower response to threats
+- **Availability** — model down = detection capability degraded
+- **Cost** — inference at scale is the new compute bill
+- **Privacy** — sending certificate data to cloud APIs leaks internal topology
+
+This is why Tlapix runs inference locally via ONNX Runtime. The AI capability is not a feature bolted on — it's the core that gets smarter with every certificate observed. The eBPF collector and BPF map executor are plumbing. The inference layer is where the value compounds.
+
+---
+
 ## Development
 
 ```bash

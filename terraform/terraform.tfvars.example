@@ -1,0 +1,19 @@
+# Copy this file to terraform.tfvars and adjust values
+#
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region = "us-east-1"
+
+# Restrict SSH to your IP (find yours: curl ifconfig.me)
+allowed_ssh_cidrs = ["YOUR_IP/32"]
+allowed_web_cidrs = ["YOUR_IP/32"]
+
+# Instance configuration
+instance_type    = "t3.large"  # 2 vCPU, 8 GB RAM — good for Rust builds
+use_spot_instance = true        # ~70% cheaper, may be interrupted (rare)
+
+# Leave empty to auto-generate a key pair
+key_pair_name = ""
+
+# Disk size (Rust target/ directory can get large)
+root_volume_size = 30
