@@ -1,0 +1,19 @@
+apiVersion: v2
+name: tlapix
+description: Autonomous Certificate Guardian — eBPF-powered TLS certificate discovery, AI anomaly detection, and kernel-speed autonomous action execution.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - certificates
+  - tls
+  - ebpf
+  - security
+  - aiops
+  - observability
+home: https://github.com/mercadoalex/tlapix
+sources:
+  - https://github.com/mercadoalex/tlapix
+maintainers:
+  - name: Tlapix Contributors
+    url: https://github.com/mercadoalex/tlapix

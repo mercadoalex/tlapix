@@ -1,0 +1,209 @@
+# Default values for Tlapix Certificate Guardian
+
+# ---------------------------------------------------------------------------
+# Agent (DaemonSet) — runs on every node, eBPF collector + executor
+# ---------------------------------------------------------------------------
+agent:
+  image:
+    repository: ghcr.io/mercadoalex/tlapix
+    tag: ""  # Defaults to Chart appVersion
+    pullPolicy: IfNotPresent
+
+  # Host network interfaces to monitor for TLS handshakes
+  interfaces:
+    - eth0
+
+  # eBPF ring buffer size in MB
+  ringBufferSizeMb: 16
+
+  # Local buffer capacity when central is unavailable
+  localBufferCapacity: 10000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Node selector for agent pods
+  nodeSelector: {}
+
+  # Tolerations (e.g., to run on control plane nodes)
+  tolerations:
+    - operator: Exists
+
+  # Update strategy for the DaemonSet
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+
+# ---------------------------------------------------------------------------
+# Central (Deployment) — analyzer, web UI, storage
+# ---------------------------------------------------------------------------
+central:
+  replicas: 1
+
+  image:
+    repository: ghcr.io/mercadoalex/tlapix
+    tag: ""  # Defaults to Chart appVersion
+    pullPolicy: IfNotPresent
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# ---------------------------------------------------------------------------
+# Web UI
+# ---------------------------------------------------------------------------
+webUi:
+  enabled: true
+  port: 8080
+  service:
+    type: ClusterIP
+    port: 80
+
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: tlapix.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
+# ---------------------------------------------------------------------------
+# Analyzer
+# ---------------------------------------------------------------------------
+analyzer:
+  # Path to ONNX model inside the container
+  aiModelPath: /opt/tlapix/models/anomaly.onnx
+  aiTimeoutSecs: 5
+
+  # Certificate inventory source
+  inventorySource:
+    # "kubernetes" reads TLS secrets from the K8s API
+    # "file" reads from a JSON file
+    # "api" calls an external HTTP endpoint
+    type: kubernetes
+
+    # For type: file
+    filePath: /etc/tlapix/inventory.json
+
+    # For type: api
+    apiEndpoint: ""
+    apiAuthToken: ""
+
+  # Inventory polling interval in seconds (max 300)
+  inventoryPollIntervalSecs: 300
+
+  # Renewal prediction re-evaluation interval in hours
+  predictionReevaluationHours: 24
+
+  # Failure probability threshold that triggers a "renew" action
+  renewalThreshold: 0.7
+
+# ---------------------------------------------------------------------------
+# Executor
+# ---------------------------------------------------------------------------
+executor:
+  # Maximum entries per BPF action map
+  maxMapEntries: 10000
+
+  # Maximum total BPF map memory in MB
+  maxMapMemoryMb: 64
+
+  # Hours after which a directive expires if cert not seen in traffic
+  directiveExpiryHours: 72
+
+  # Retry configuration
+  retryMaxAttempts: 3
+  retryBaseMs: 100
+
+# ---------------------------------------------------------------------------
+# ACME Auto-Renewal
+# ---------------------------------------------------------------------------
+acme:
+  enabled: false
+  directoryUrl: "https://acme-v02.api.letsencrypt.org/directory"
+  contactEmail: ""
+  # Secret name containing ACME credentials
+  credentialsSecret: ""
+
+# ---------------------------------------------------------------------------
+# Observability
+# ---------------------------------------------------------------------------
+observability:
+  # OpenTelemetry OTLP export
+  otlp:
+    enabled: false
+    endpoint: ""
+    authToken: ""
+    exportIntervalSecs: 60
+
+  # Prometheus metrics endpoint
+  prometheus:
+    enabled: true
+    port: 9090
+    # Create a ServiceMonitor for Prometheus Operator
+    serviceMonitor:
+      enabled: false
+      interval: 30s
+      labels: {}
+
+  # StatsD export
+  statsd:
+    enabled: false
+    endpoint: ""
+
+  # Audit log retention in days
+  auditRetentionDays: 90
+
+  # Certificate metadata retention in days
+  metadataRetentionDays: 90
+
+# ---------------------------------------------------------------------------
+# Webhooks
+# ---------------------------------------------------------------------------
+webhooks: []
+  # - endpoint: https://hooks.slack.com/services/YOUR/WEBHOOK
+  #   timeoutSecs: 10
+  #   retryMax: 3
+  #   retryBaseSecs: 1
+
+# ---------------------------------------------------------------------------
+# RBAC
+# ---------------------------------------------------------------------------
+rbac:
+  # Create ClusterRole and ClusterRoleBinding
+  create: true
+
+# ---------------------------------------------------------------------------
+# Service Account
+# ---------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# ---------------------------------------------------------------------------
+# Pod Security
+# ---------------------------------------------------------------------------
+podSecurityContext: {}
+
+# ---------------------------------------------------------------------------
+# Image Pull Secrets
+# ---------------------------------------------------------------------------
+imagePullSecrets: []

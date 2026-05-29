@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tlapix.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tlapix.labels" . | nindent 4 }}
+data:
+  tlapix.toml: |
+    [collector]
+    interfaces = {{ .Values.agent.interfaces | toJson }}
+    ring_buffer_size_mb = {{ .Values.agent.ringBufferSizeMb }}
+    local_buffer_capacity = {{ .Values.agent.localBufferCapacity }}
+    metadata_retention_days = {{ .Values.observability.metadataRetentionDays }}
+
+    [analyzer]
+    ai_model_path = "{{ .Values.analyzer.aiModelPath }}"
+    ai_timeout_secs = {{ .Values.analyzer.aiTimeoutSecs }}
+    inventory_poll_interval_secs = {{ .Values.analyzer.inventoryPollIntervalSecs }}
+    prediction_reevaluation_hours = {{ .Values.analyzer.predictionReevaluationHours }}
+    renewal_threshold_probability = {{ .Values.analyzer.renewalThreshold }}
+
+    {{- if eq .Values.analyzer.inventorySource.type "file" }}
+    [analyzer.inventory_source]
+    type = "file"
+    path = "{{ .Values.analyzer.inventorySource.filePath }}"
+    {{- else if eq .Values.analyzer.inventorySource.type "api" }}
+    [analyzer.inventory_source]
+    type = "api"
+    endpoint = "{{ .Values.analyzer.inventorySource.apiEndpoint }}"
+    auth_token = "{{ .Values.analyzer.inventorySource.apiAuthToken }}"
+    {{- else }}
+    [analyzer.inventory_source]
+    type = "file"
+    path = "/etc/tlapix/inventory.json"
+    {{- end }}
+
+    [executor]
+    max_map_entries = {{ .Values.executor.maxMapEntries }}
+    max_map_memory_mb = {{ .Values.executor.maxMapMemoryMb }}
+    directive_expiry_hours = {{ .Values.executor.directiveExpiryHours }}
+    retry_max_attempts = {{ .Values.executor.retryMaxAttempts }}
+    retry_base_ms = {{ .Values.executor.retryBaseMs }}
+
+    {{- if .Values.acme.enabled }}
+    [executor.acme_config]
+    directory_url = "{{ .Values.acme.directoryUrl }}"
+    contact_email = "{{ .Values.acme.contactEmail }}"
+    credentials_path = "/etc/tlapix/acme-credentials.json"
+    {{- end }}
+
+    {{- if .Values.webhooks }}
+    {{- range .Values.webhooks }}
+    [[executor.webhooks]]
+    endpoint = "{{ .endpoint }}"
+    timeout_secs = {{ .timeoutSecs | default 10 }}
+    retry_max = {{ .retryMax | default 3 }}
+    retry_base_secs = {{ .retryBaseSecs | default 1 }}
+    {{- end }}
+    {{- else }}
+    webhooks = []
+    {{- end }}
+
+    [observability]
+    {{- if .Values.observability.otlp.enabled }}
+    otlp_endpoint = "{{ .Values.observability.otlp.endpoint }}"
+    {{- if .Values.observability.otlp.authToken }}
+    otlp_auth_token = "{{ .Values.observability.otlp.authToken }}"
+    {{- end }}
+    {{- end }}
+    otlp_export_interval_secs = {{ .Values.observability.otlp.exportIntervalSecs | default 60 }}
+    {{- if .Values.observability.prometheus.enabled }}
+    prometheus_bind = "0.0.0.0:{{ .Values.observability.prometheus.port }}"
+    {{- end }}
+    {{- if .Values.observability.statsd.enabled }}
+    statsd_endpoint = "{{ .Values.observability.statsd.endpoint }}"
+    {{- end }}
+    audit_retention_days = {{ .Values.observability.auditRetentionDays }}
+
+    {{- if .Values.webUi.enabled }}
+    [web_ui]
+    bind = "0.0.0.0:{{ .Values.webUi.port }}"
+    {{- end }}

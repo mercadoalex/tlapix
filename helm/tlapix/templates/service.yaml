@@ -1,0 +1,39 @@
+{{- if .Values.webUi.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "tlapix.fullname" . }}-web
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tlapix.labels" . | nindent 4 }}
+    app.kubernetes.io/component: central
+spec:
+  type: {{ .Values.webUi.service.type }}
+  ports:
+    - port: {{ .Values.webUi.service.port }}
+      targetPort: web-ui
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "tlapix.centralSelectorLabels" . | nindent 4 }}
+{{- end }}
+---
+{{- if .Values.observability.prometheus.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "tlapix.fullname" . }}-metrics
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tlapix.labels" . | nindent 4 }}
+    app.kubernetes.io/component: central
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.observability.prometheus.port }}
+      targetPort: metrics
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "tlapix.centralSelectorLabels" . | nindent 4 }}
+{{- end }}

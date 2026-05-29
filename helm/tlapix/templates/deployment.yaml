@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tlapix.fullname" . }}-central
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "tlapix.labels" . | nindent 4 }}
+    app.kubernetes.io/component: central
+spec:
+  replicas: {{ .Values.central.replicas }}
+  selector:
+    matchLabels:
+      {{- include "tlapix.centralSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "tlapix.centralSelectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "tlapix.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: central
+          image: "{{ .Values.central.image.repository }}:{{ include "tlapix.imageTag" . }}"
+          imagePullPolicy: {{ .Values.central.image.pullPolicy }}
+          args:
+            - --config
+            - /etc/tlapix/tlapix.toml
+            - --mode
+            - central
+          ports:
+            {{- if .Values.webUi.enabled }}
+            - name: web-ui
+              containerPort: {{ .Values.webUi.port }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.observability.prometheus.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.observability.prometheus.port }}
+              protocol: TCP
+            {{- end }}
+          resources:
+            {{- toYaml .Values.central.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/tlapix
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/tlapix
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.webUi.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.webUi.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "tlapix.fullname" . }}-config
+        - name: data
+          emptyDir: {}
+      {{- with .Values.central.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.central.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.central.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
