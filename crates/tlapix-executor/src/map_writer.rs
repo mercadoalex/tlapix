@@ -68,7 +68,7 @@ pub enum MapNotification {
     },
     /// A write operation failed permanently after all retries.
     PermanentFailure {
-        directive: ActionDirective,
+        directive: Box<ActionDirective>,
         reason: String,
         attempts: u8,
     },
@@ -327,7 +327,7 @@ impl MapWriterService {
         if let Some(notifier) = &self.notifier {
             notifier
                 .notify(MapNotification::PermanentFailure {
-                    directive: directive.clone(),
+                    directive: Box::new(directive.clone()),
                     reason: last_error.clone(),
                     attempts: self.max_retries,
                 })
@@ -436,7 +436,15 @@ impl MockNotifier {
             notifications: Arc::new(Mutex::new(Vec::new())),
         }
     }
+}
 
+impl Default for MockNotifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl MockNotifier {
     pub async fn get_notifications(&self) -> Vec<MapNotification> {
         self.notifications.lock().await.clone()
     }

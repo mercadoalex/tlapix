@@ -175,7 +175,7 @@ pub fn resolve_conflicts(directives: &[ActionDirectiveRow]) -> ConflictResolutio
     let mut winners = Vec::new();
     let mut discarded = Vec::new();
 
-    for (_fingerprint, group) in &groups {
+    for group in groups.values() {
         if group.is_empty() {
             continue;
         }

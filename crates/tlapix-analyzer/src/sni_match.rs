@@ -47,7 +47,7 @@ pub fn sni_matches_san(sni: &str, san: &str) -> bool {
 
         // The SNI must end with ".<base_domain>"
         // and the part before that must be exactly one label (no dots)
-        if let Some(subdomain) = sni_lower.strip_suffix(&format!(".{}", base_domain)).as_deref() {
+        if let Some(subdomain) = sni_lower.strip_suffix(&format!(".{}", base_domain)) {
             // The subdomain must be a single label: non-empty and no dots
             return !subdomain.is_empty() && !subdomain.contains('.');
         }

@@ -168,7 +168,7 @@ impl RenewalPredictor {
                 // Baseline: 0.5 + (30 - days_until_expiry) * 0.015
                 // This increases as expiry approaches, starting at 0.5 for 30 days
                 // and reaching ~0.95 at 0 days.
-                let days_clamped = days_until_expiry.max(0).min(30);
+                let days_clamped = days_until_expiry.clamp(0, 30);
                 0.5 + (30 - days_clamped) as f64 * 0.015
             }
             Some(h) => {
@@ -197,7 +197,7 @@ impl RenewalPredictor {
                 };
 
                 // Time pressure factor (increases as expiry approaches)
-                let days_clamped = days_until_expiry.max(0).min(30);
+                let days_clamped = days_until_expiry.clamp(0, 30);
                 let time_factor = (30 - days_clamped) as f64 * 0.008;
 
                 (base + failure_factor + issuer_factor + time_factor).min(1.0)

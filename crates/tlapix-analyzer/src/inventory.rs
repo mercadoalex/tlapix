@@ -6,7 +6,6 @@
 //!
 //! Requirements: 9.1, 9.2, 9.4, 9.5, 9.7
 
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -337,9 +336,8 @@ impl InventoryManager {
     // -----------------------------------------------------------------------
 
     /// Import entries from a JSON file.
-    async fn import_from_file(&self, path: &PathBuf) -> InventoryResult<Vec<RawInventoryEntry>> {
-        let path = path.clone();
-        let content = tokio::fs::read_to_string(&path).await?;
+    async fn import_from_file(&self, path: &std::path::Path) -> InventoryResult<Vec<RawInventoryEntry>> {
+        let content = tokio::fs::read_to_string(path).await?;
         let entries: Vec<RawInventoryEntry> = serde_json::from_str(&content)?;
         Ok(entries)
     }
@@ -427,6 +425,7 @@ fn parse_hex_fingerprint(hex: &str) -> Option<[u8; 32]> {
 mod tests {
     use super::*;
     use std::io::Write;
+    use std::path::PathBuf;
     use tempfile::NamedTempFile;
 
     /// Helper to create a hex fingerprint string from bytes.
