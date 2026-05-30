@@ -284,3 +284,203 @@ Each project continues to evolve independently. The platform is the orchestratio
 > "We don't replace your observability stack. We give it superpowers."
 
 The customer keeps Grafana, keeps Prometheus, keeps their alerts. They add our modules and suddenly their cluster has autonomous certificate management, deception-based threat detection, AI scheduling, and heartbeat monitoring — all feeding into the tools they already trust.
+
+---
+
+## AI/ML Strategy: Local-First, Cloud-Optional
+
+### The Problem Today
+
+Each module uses a different AI approach, creating vendor lock-in and inconsistency:
+
+| Module | Current AI/ML | Dependency |
+|--------|--------------|-----------|
+| Tlapix | ONNX Runtime (local) | None (correct approach) |
+| eBeeControl | Gemini (Google Cloud) | Requires Google Cloud |
+| Quack | Splunk AITK | Requires Splunk |
+| Earthworm | Server-side rules | No real ML |
+
+Four modules, three different AI strategies, two vendor lock-ins. That's not a platform.
+
+### The Unified Architecture
+
+TitanOps needs a single AI layer with a pluggable backend:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    TitanOps AI Layer                          │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │              AI Provider Interface                    │    │
+│  │                                                      │    │
+│  │  train(data) → model                                 │    │
+│  │  predict(features) → score                           │    │
+│  │  explain(decision) → reasoning                       │    │
+│  └──────────┬──────────┬──────────┬──────────┬─────────┘    │
+│             │          │          │          │               │
+│        ┌────┴───┐ ┌────┴───┐ ┌────┴───┐ ┌───┴────┐         │
+│        │ Local  │ │ Gemini │ │Bedrock │ │ Splunk │         │
+│        │ (ONNX) │ │(Google)│ │ (AWS)  │ │ (AITK) │         │
+│        └────────┘ └────────┘ └────────┘ └────────┘         │
+│                                                              │
+│  Default: Local ONNX (free, private, no dependency)          │
+│  Optional: Cloud providers for enhanced capabilities         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### The Three Tiers
+
+| Tier | What | Cost | When to Use |
+|------|------|------|-------------|
+| **Tier 1: Local ONNX** | Isolation Forest, XGBoost, simple models | $0 | Default. Always works. No internet needed. |
+| **Tier 2: Cloud ML** | Vertex AI, Bedrock, SageMaker | $$$ | When customer wants better models, has budget |
+| **Tier 3: LLM** | Gemini, Claude, GPT | $$$$ | Explanation generation, incident reports, natural language queries |
+
+### What Runs Where
+
+| Function | Where It Runs | Why |
+|----------|--------------|-----|
+| Inference (scoring, prediction) | Always local | Latency-sensitive, must work offline |
+| Decision making | Always local | Can't depend on cloud availability for actions |
+| Action execution | Always local (BPF maps) | Kernel-speed, no network round-trip |
+| Model training | Cloud (optional) | Offline, not in hot path, benefits from scale |
+| Explanation generation | Cloud (optional) | Nice-to-have, not critical path |
+| Complex reasoning/correlation | Local default, cloud optional | Latency matters for correlation |
+
+### Module Migration Plan
+
+| Module | Today | TitanOps Unified |
+|--------|-------|-----------------|
+| Tlapix | ONNX (local) | ✅ Keep as-is. This is the reference implementation. |
+| eBeeControl | Gemini (required) | Refactor: Local rules + ONNX default, Gemini optional for explanations |
+| Quack | Splunk AITK (required) | Refactor: Local scoring default, Splunk AITK optional for training |
+| Earthworm | Rules only | Add: Local ONNX anomaly model (same as Tlapix approach) |
+
+### Unified Configuration
+
+```yaml
+# titanops-values.yaml
+ai:
+  # Default provider (works offline, free, no vendor dependency)
+  provider: local
+  local:
+    modelPath: /opt/titanops/models/
+    # Each module has its own model file:
+    # tlapix-anomaly.onnx
+    # earthworm-anomaly.onnx
+    # ebeecontrol-threat.onnx
+    # quack-priority.onnx
+
+  # Optional: Cloud provider for enhanced capabilities
+  # Uncomment ONE of the following:
+
+  # cloud:
+  #   provider: gemini
+  #   gemini:
+  #     apiKey: ""
+  #     model: "gemini-2.0-flash"
+  #
+  #   provider: bedrock
+  #   bedrock:
+  #     region: "us-east-1"
+  #     modelId: "anthropic.claude-3-haiku"
+  #
+  #   provider: vertex
+  #   vertex:
+  #     project: "my-project"
+  #     location: "us-central1"
+  #
+  #   provider: sagemaker
+  #   sagemaker:
+  #     region: "us-east-1"
+  #     endpointName: "titanops-model"
+  #
+  #   provider: splunk
+  #   splunk:
+  #     searchUrl: "https://splunk:8089"
+  #     modelName: "titanops_model"
+
+  # What cloud is used for (never the hot path)
+  cloudUsage:
+    training: true          # Retrain models in the cloud
+    explanations: true      # Generate human-readable explanations
+    correlation: false      # Keep correlation local (latency-sensitive)
+```
+
+### Key Principles
+
+1. **Local-first**: The product works out of the box with zero cloud dependencies. Install via Helm, it runs.
+2. **Cloud-optional**: Customers who want better models, explanations, or training pipelines can plug in their preferred cloud AI.
+3. **Vendor-neutral**: We don't pick the cloud for them. Gemini, Bedrock, Vertex, SageMaker, Splunk AITK — all supported.
+4. **Hot path is always local**: Inference, decisions, and actions never depend on network calls. Cloud is only for offline training and optional enrichment.
+5. **Graceful degradation**: If cloud is configured but unavailable, fall back to local models (same pattern Tlapix already implements).
+
+### Why This Matters Strategically
+
+- **No vendor lock-in for customers**: They choose their cloud. Or no cloud at all.
+- **No vendor lock-in for us**: We're not dependent on Google, AWS, or Splunk for our core product to work.
+- **Enterprise-friendly**: Large companies already have Bedrock/Vertex/SageMaker. They want TitanOps to use THEIR cloud AI, not bring its own.
+- **Startup-friendly**: Small teams with no cloud budget get the full product for free (local ONNX).
+- **Air-gap compatible**: Government, defense, regulated industries can run TitanOps without any internet connectivity.
+
+### The Tlapix Model as Reference
+
+Tlapix already implements this correctly:
+- Local ONNX Runtime for inference ($0, no dependency)
+- Rule-based fallback when model unavailable
+- AI backend gated behind a feature flag
+- Model trained offline, deployed as a file
+
+This pattern scales to all four modules. Tlapix is the blueprint.
+
+---
+
+## UI Strategy: Product First, Integrations Second
+
+### Priority Order
+
+| Priority | What | Why |
+|----------|------|-----|
+| **1** | TitanOps React Dashboard | The product. Works standalone. Shows decisions, actions, reasoning. |
+| **2** | Integration exports (Prometheus, OTLP, webhooks) | Data flows out to whatever they have. |
+| **3** | Intelligence injection into existing platforms | Push AI reasoning INTO their Grafana/Datadog/Splunk — not just metrics. |
+
+### Why Our Own Dashboard First
+
+The TitanOps dashboard shows what no integration can:
+- Autonomous decision chain (observation → analysis → action)
+- Cross-module correlation timeline
+- AI confidence scores and reasoning
+- Human override controls
+- "Why did TitanOps do X?" explainability
+
+Grafana shows time-series charts. Datadog shows metrics. Our dashboard shows **decisions and actions** — that's the product.
+
+### What the Dashboard Is NOT
+
+- NOT a metrics dashboard (use Grafana/Datadog for that)
+- NOT a log viewer (use Loki/Elastic for that)
+- NOT a replacement for existing tools
+
+### What the Dashboard IS
+
+A **command center for autonomous operations**:
+- Module health status (all four at a glance)
+- Recent autonomous actions with reasoning
+- Cross-module correlation timeline
+- AI predictions and confidence
+- Human override / approval controls
+- Audit trail for compliance
+
+### Integration as Intelligence Injection
+
+Priority 3 isn't "push metrics to Grafana." It's "push INTELLIGENCE to their tools":
+
+| Platform | What We Push | Value Added |
+|----------|-------------|-------------|
+| Grafana | Annotations on their panels showing AI decisions | "At 14:32, TitanOps renewed this cert because..." |
+| Datadog | Custom events with full reasoning chain | Rich context no other data source provides |
+| Splunk | Saved searches powered by our model outputs | AI-driven alerts, not just threshold alerts |
+| PagerDuty | Rich alerts with decision chain + confidence | Responders know WHY before they look |
+
+We're not sending numbers. We're sending **decisions with explanations** that no other data source can generate.
