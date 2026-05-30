@@ -50,10 +50,7 @@ impl AnalyzerService {
     }
 
     /// Evaluate a certificate for anomalies (rule-based only).
-    pub async fn evaluate(
-        &self,
-        metadata: &CertificateMetadata,
-    ) -> Vec<(AnomalyType, Severity)> {
+    pub async fn evaluate(&self, metadata: &CertificateMetadata) -> Vec<(AnomalyType, Severity)> {
         self.rule_detector.detect(metadata)
     }
 

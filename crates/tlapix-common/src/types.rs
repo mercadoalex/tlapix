@@ -71,13 +71,8 @@ pub mod completeness {
     pub const ISSUER_FINGERPRINT: u32 = 1 << 9;
 
     /// All required fields present.
-    pub const ALL_REQUIRED: u32 = SUBJECT
-        | ISSUER
-        | SERIAL_NUMBER
-        | NOT_BEFORE
-        | NOT_AFTER
-        | KEY_ALGORITHM
-        | KEY_SIZE;
+    pub const ALL_REQUIRED: u32 =
+        SUBJECT | ISSUER | SERIAL_NUMBER | NOT_BEFORE | NOT_AFTER | KEY_ALGORITHM | KEY_SIZE;
 }
 
 // ---------------------------------------------------------------------------

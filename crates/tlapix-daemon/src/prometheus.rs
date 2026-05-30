@@ -130,11 +130,7 @@ impl PrometheusExporter {
             let listener = match tokio::net::TcpListener::bind(bind_addr).await {
                 Ok(l) => l,
                 Err(e) => {
-                    tracing::error!(
-                        "Failed to bind Prometheus endpoint on {}: {}",
-                        bind_addr,
-                        e
-                    );
+                    tracing::error!("Failed to bind Prometheus endpoint on {}: {}", bind_addr, e);
                     return;
                 }
             };
@@ -175,10 +171,7 @@ mod tests {
     #[test]
     fn test_metrics_initial_values() {
         let metrics = PrometheusMetrics::new();
-        assert_eq!(
-            metrics.certificates_discovered.load(Ordering::Relaxed),
-            0
-        );
+        assert_eq!(metrics.certificates_discovered.load(Ordering::Relaxed), 0);
         assert_eq!(metrics.anomalies_detected.load(Ordering::Relaxed), 0);
         assert_eq!(metrics.predictions_generated.load(Ordering::Relaxed), 0);
         assert_eq!(metrics.actions_executed.load(Ordering::Relaxed), 0);
@@ -200,10 +193,7 @@ mod tests {
         metrics.inc_actions_failed();
         metrics.inc_actions_failed();
 
-        assert_eq!(
-            metrics.certificates_discovered.load(Ordering::Relaxed),
-            2
-        );
+        assert_eq!(metrics.certificates_discovered.load(Ordering::Relaxed), 2);
         assert_eq!(metrics.anomalies_detected.load(Ordering::Relaxed), 1);
         assert_eq!(metrics.predictions_generated.load(Ordering::Relaxed), 3);
         assert_eq!(metrics.actions_executed.load(Ordering::Relaxed), 1);
@@ -311,17 +301,11 @@ mod tests {
 
         let cloned = metrics.clone();
         // Both should see the same counter value (shared Arc)
-        assert_eq!(
-            cloned.certificates_discovered.load(Ordering::Relaxed),
-            1
-        );
+        assert_eq!(cloned.certificates_discovered.load(Ordering::Relaxed), 1);
 
         // Incrementing via clone should be visible from original
         cloned.inc_certificates_discovered();
-        assert_eq!(
-            metrics.certificates_discovered.load(Ordering::Relaxed),
-            2
-        );
+        assert_eq!(metrics.certificates_discovered.load(Ordering::Relaxed), 2);
     }
 
     /// Test that the endpoint is not started when prometheus_bind is None.
@@ -360,9 +344,6 @@ mod tests {
     #[test]
     fn test_default_trait() {
         let metrics = PrometheusMetrics::default();
-        assert_eq!(
-            metrics.certificates_discovered.load(Ordering::Relaxed),
-            0
-        );
+        assert_eq!(metrics.certificates_discovered.load(Ordering::Relaxed), 0);
     }
 }

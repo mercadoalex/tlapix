@@ -7,9 +7,7 @@ use proptest::prelude::*;
 use chrono::Utc;
 use uuid::Uuid;
 
-use tlapix_common::audit::{
-    AnalysisContext, ActionContext, AuditLogger, ObservationContext,
-};
+use tlapix_common::audit::{ActionContext, AnalysisContext, AuditLogger, ObservationContext};
 use tlapix_common::storage::Storage;
 use tlapix_common::types::{ActionType, ExecutionOutcome, Severity};
 

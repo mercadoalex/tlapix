@@ -278,7 +278,7 @@ mod tests {
             fp,
             RiskLevel::Medium,
             now_ms - (50 * 60 * 60 * 1000), // first classified 50h ago
-            Some(twenty_five_hours_ago),      // last escalated 25h ago
+            Some(twenty_five_hours_ago),    // last escalated 25h ago
             1,
         )
         .await;
@@ -306,7 +306,7 @@ mod tests {
             fp,
             RiskLevel::High,
             now_ms - (75 * 60 * 60 * 1000), // first classified 75h ago
-            Some(twenty_five_hours_ago),      // last escalated 25h ago
+            Some(twenty_five_hours_ago),    // last escalated 25h ago
             2,
         )
         .await;
@@ -406,7 +406,10 @@ mod tests {
             expired_at: None,
             failure_reason: None,
         };
-        storage.insert_action_directive(&prior_directive).await.unwrap();
+        storage
+            .insert_action_directive(&prior_directive)
+            .await
+            .unwrap();
 
         // Set up shadow at High, ready to escalate to Critical
         let now_ms = Utc::now().timestamp_millis();

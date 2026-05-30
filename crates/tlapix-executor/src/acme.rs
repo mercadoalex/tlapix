@@ -15,9 +15,9 @@ use instant_acme::{
     Account, AccountCredentials, ChallengeType, Identifier, NewAccount, NewOrder, OrderStatus,
 };
 use thiserror::Error;
-use tokio::sync::Mutex;
 use tlapix_common::config::AcmeConfig;
 use tlapix_common::types::ActionDirective;
+use tokio::sync::Mutex;
 
 /// Maximum time allowed for a renewal operation (Requirement 6.6).
 pub const RENEWAL_TIMEOUT: Duration = Duration::from_secs(30);
@@ -210,10 +210,8 @@ impl RenewalWorkflow for AcmeRenewalWorkflow {
         let account = self.get_or_create_account().await?;
         let domains = Self::extract_domains(directive);
 
-        let identifiers: Vec<Identifier> = domains
-            .iter()
-            .map(|d| Identifier::Dns(d.clone()))
-            .collect();
+        let identifiers: Vec<Identifier> =
+            domains.iter().map(|d| Identifier::Dns(d.clone())).collect();
 
         let mut order = account
             .new_order(&NewOrder {
@@ -236,9 +234,7 @@ impl RenewalWorkflow for AcmeRenewalWorkflow {
                 .certificate()
                 .await
                 .map_err(|e| AcmeError::DownloadError(format!("{e}")))?
-                .ok_or_else(|| {
-                    AcmeError::DownloadError("no certificate in valid order".into())
-                })?;
+                .ok_or_else(|| AcmeError::DownloadError("no certificate in valid order".into()))?;
 
             return Ok(RenewalOutcome {
                 domains,
@@ -333,9 +329,9 @@ impl RenewalWorkflow for AcmeRenewalWorkflow {
 
             let private_key = rcgen::KeyPair::generate()
                 .map_err(|e| AcmeError::FinalizationError(format!("key generation error: {e}")))?;
-            let csr = params
-                .serialize_request(&private_key)
-                .map_err(|e| AcmeError::FinalizationError(format!("CSR serialization error: {e}")))?;
+            let csr = params.serialize_request(&private_key).map_err(|e| {
+                AcmeError::FinalizationError(format!("CSR serialization error: {e}"))
+            })?;
 
             order
                 .finalize(csr.der())
@@ -372,7 +368,9 @@ impl RenewalWorkflow for AcmeRenewalWorkflow {
                 .certificate()
                 .await
                 .map_err(|e| AcmeError::DownloadError(format!("{e}")))?
-                .ok_or_else(|| AcmeError::DownloadError("no certificate after finalization".into()))?
+                .ok_or_else(|| {
+                    AcmeError::DownloadError("no certificate after finalization".into())
+                })?
         };
 
         Ok(RenewalOutcome {
@@ -514,7 +512,9 @@ impl RenewalWorkflow for MockRenewalWorkflow {
                 "mock-{}",
                 hex::encode(&directive.cert_fingerprint[..8])
             )],
-            certificate_pem: Some("-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----".to_string()),
+            certificate_pem: Some(
+                "-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----".to_string(),
+            ),
             completed_at: Utc::now(),
             workflow_type: "mock".to_string(),
         })
@@ -768,10 +768,7 @@ mod tests {
     async fn test_retry_then_success() {
         // Create a workflow that fails first then succeeds
         let workflow = Arc::new(MockRenewalWorkflow::failing("transient error"));
-        let service = AcmeRenewalService::with_timeout(
-            workflow.clone(),
-            Duration::from_secs(10),
-        );
+        let service = AcmeRenewalService::with_timeout(workflow.clone(), Duration::from_secs(10));
         let directive = make_test_directive();
 
         // Set to succeed after we start (simulating transient failure)

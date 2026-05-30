@@ -291,7 +291,9 @@ async fn test_graceful_degradation_ai_fallback() {
     let mode = analyzer.health_check().await;
     let mode_str = format!("{}", mode);
     assert!(
-        mode_str.contains("Rule-Based") || mode_str.contains("RuleBased") || mode_str.contains("rule"),
+        mode_str.contains("Rule-Based")
+            || mode_str.contains("RuleBased")
+            || mode_str.contains("rule"),
         "Should be in rule-based fallback mode, got: {}",
         mode_str
     );

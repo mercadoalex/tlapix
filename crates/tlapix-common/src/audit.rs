@@ -113,8 +113,8 @@ impl AuditLogger {
         fingerprint: &[u8; 32],
         context: &ObservationContext,
     ) -> Result<(), AuditError> {
-        let details = serde_json::to_string(context)
-            .map_err(|e| AuditError::Serialization(e.to_string()))?;
+        let details =
+            serde_json::to_string(context).map_err(|e| AuditError::Serialization(e.to_string()))?;
 
         self.write_entry(correlation_id, fingerprint, "observation", &details)
             .await
@@ -130,8 +130,8 @@ impl AuditLogger {
         fingerprint: &[u8; 32],
         context: &AnalysisContext,
     ) -> Result<(), AuditError> {
-        let details = serde_json::to_string(context)
-            .map_err(|e| AuditError::Serialization(e.to_string()))?;
+        let details =
+            serde_json::to_string(context).map_err(|e| AuditError::Serialization(e.to_string()))?;
 
         self.write_entry(correlation_id, fingerprint, "analysis", &details)
             .await
@@ -148,8 +148,8 @@ impl AuditLogger {
         fingerprint: &[u8; 32],
         context: &ActionContext,
     ) -> Result<(), AuditError> {
-        let details = serde_json::to_string(context)
-            .map_err(|e| AuditError::Serialization(e.to_string()))?;
+        let details =
+            serde_json::to_string(context).map_err(|e| AuditError::Serialization(e.to_string()))?;
 
         self.write_entry(correlation_id, fingerprint, "action", &details)
             .await

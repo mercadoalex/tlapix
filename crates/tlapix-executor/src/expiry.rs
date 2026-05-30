@@ -248,7 +248,10 @@ mod tests {
         }
     }
 
-    fn make_test_certificate(fingerprint: [u8; 32], last_seen: DateTime<Utc>) -> CertificateMetadata {
+    fn make_test_certificate(
+        fingerprint: [u8; 32],
+        last_seen: DateTime<Utc>,
+    ) -> CertificateMetadata {
         let now = Utc::now();
         CertificateMetadata {
             fingerprint,
@@ -328,7 +331,11 @@ mod tests {
         assert_eq!(removed[0], fp);
 
         // Verify directive status updated in storage
-        let updated = storage.get_action_directive("dir-001").await.unwrap().unwrap();
+        let updated = storage
+            .get_action_directive("dir-001")
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(updated.status, "expired");
     }
 
@@ -360,7 +367,11 @@ mod tests {
         assert!(removed.is_empty());
 
         // Verify directive status unchanged
-        let unchanged = storage.get_action_directive("dir-002").await.unwrap().unwrap();
+        let unchanged = storage
+            .get_action_directive("dir-002")
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(unchanged.status, "active");
     }
 
@@ -417,7 +428,11 @@ mod tests {
         assert_eq!(result.expired_ids, vec!["dir-stale"]);
 
         // Fresh directive should remain active
-        let fresh = storage.get_action_directive("dir-fresh").await.unwrap().unwrap();
+        let fresh = storage
+            .get_action_directive("dir-fresh")
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(fresh.status, "active");
     }
 
@@ -516,8 +531,16 @@ mod tests {
         assert_eq!(result.discarded.len(), 2);
 
         // Find winners by fingerprint
-        let winner_fp1 = result.winners.iter().find(|w| w.cert_fingerprint == fp1).unwrap();
-        let winner_fp2 = result.winners.iter().find(|w| w.cert_fingerprint == fp2).unwrap();
+        let winner_fp1 = result
+            .winners
+            .iter()
+            .find(|w| w.cert_fingerprint == fp1)
+            .unwrap();
+        let winner_fp2 = result
+            .winners
+            .iter()
+            .find(|w| w.cert_fingerprint == fp2)
+            .unwrap();
 
         assert_eq!(winner_fp1.id, "a2"); // critical wins
         assert_eq!(winner_fp2.id, "b2"); // high wins

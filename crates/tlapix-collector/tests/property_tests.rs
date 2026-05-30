@@ -385,9 +385,9 @@ fn compute_completeness_flags(cert: &CertificateMetadata) -> u32 {
 /// Check if a specific field (by bit index) is present in the certificate.
 fn is_field_present(cert: &CertificateMetadata, bit: u32) -> bool {
     match bit {
-        0 => !cert.subject.is_empty(),                    // SUBJECT
-        1 => !cert.issuer.is_empty(),                     // ISSUER
-        2 => !cert.serial_number.is_empty(),              // SERIAL_NUMBER
+        0 => !cert.subject.is_empty(),       // SUBJECT
+        1 => !cert.issuer.is_empty(),        // ISSUER
+        2 => !cert.serial_number.is_empty(), // SERIAL_NUMBER
         3 => {
             // NOT_BEFORE: present if different from default
             cert.not_before.timestamp() != 0
@@ -400,11 +400,11 @@ fn is_field_present(cert: &CertificateMetadata, bit: u32) -> bool {
                 && cert.not_after != cert.last_seen
                 && cert.not_after != cert.first_seen
         }
-        5 => !cert.sans.is_empty(),                       // SANS
-        6 => !cert.key_algorithm.is_empty(),              // KEY_ALGORITHM
-        7 => cert.key_size > 0,                           // KEY_SIZE
-        8 => cert.chain_depth > 0,                        // CHAIN_DEPTH
-        9 => cert.issuer_fingerprint.is_some(),           // ISSUER_FINGERPRINT
+        5 => !cert.sans.is_empty(),             // SANS
+        6 => !cert.key_algorithm.is_empty(),    // KEY_ALGORITHM
+        7 => cert.key_size > 0,                 // KEY_SIZE
+        8 => cert.chain_depth > 0,              // CHAIN_DEPTH
+        9 => cert.issuer_fingerprint.is_some(), // ISSUER_FINGERPRINT
         _ => false,
     }
 }

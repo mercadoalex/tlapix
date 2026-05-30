@@ -65,8 +65,8 @@ fn workspace_root() -> Result<PathBuf> {
         .output()
         .context("Failed to locate workspace root")?;
 
-    let path = String::from_utf8(output.stdout)
-        .context("Invalid UTF-8 in cargo locate-project output")?;
+    let path =
+        String::from_utf8(output.stdout).context("Invalid UTF-8 in cargo locate-project output")?;
 
     Ok(PathBuf::from(path.trim())
         .parent()

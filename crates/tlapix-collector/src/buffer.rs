@@ -10,10 +10,10 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
+use tlapix_common::types::CertificateMetadata;
 use tokio::sync::mpsc;
 use tokio::time::Instant;
 use tokio_util::sync::CancellationToken;
-use tlapix_common::types::CertificateMetadata;
 
 /// Maximum number of records the buffer can hold.
 pub const DEFAULT_BUFFER_CAPACITY: usize = 10_000;
@@ -709,8 +709,7 @@ mod tests {
         buffer.push(make_metadata(1));
 
         // Simulate expiry by setting buffering_started in the past
-        buffer.retry_state.buffering_started =
-            Some(Instant::now() - Duration::from_secs(2));
+        buffer.retry_state.buffering_started = Some(Instant::now() - Duration::from_secs(2));
 
         assert!(buffer.is_expired());
 
@@ -759,11 +758,7 @@ mod tests {
         let sink = Arc::new(MockSink::new(true));
         let cancel = CancellationToken::new();
 
-        let handle = tokio::spawn(run_flush_loop(
-            buffer.clone(),
-            sink.clone(),
-            cancel.clone(),
-        ));
+        let handle = tokio::spawn(run_flush_loop(buffer.clone(), sink.clone(), cancel.clone()));
 
         // Cancel immediately
         cancel.cancel();

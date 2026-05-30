@@ -499,7 +499,11 @@ mod tests {
         event.sni_len = sni.len() as u16;
 
         let result = process_event(&event);
-        assert!(result.is_ok(), "failed to process valid cert: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "failed to process valid cert: {:?}",
+            result.err()
+        );
 
         let processed = result.unwrap();
         assert!(!processed.is_truncated);

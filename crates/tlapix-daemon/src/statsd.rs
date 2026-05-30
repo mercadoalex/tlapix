@@ -176,14 +176,12 @@ impl StatsdExporter {
 
     /// Send a raw StatsD message over the UDP socket.
     fn send_raw(&self, message: &str) -> Result<()> {
-        self.socket
-            .send(message.as_bytes())
-            .with_context(|| {
-                format!(
-                    "Failed to send StatsD packet to {}: {}",
-                    self.endpoint, message
-                )
-            })?;
+        self.socket.send(message.as_bytes()).with_context(|| {
+            format!(
+                "Failed to send StatsD packet to {}: {}",
+                self.endpoint, message
+            )
+        })?;
         Ok(())
     }
 }
@@ -279,7 +277,10 @@ mod tests {
 
         for name in &metrics {
             let formatted = format_counter(name, 42);
-            assert!(formatted.ends_with("|c"), "Should end with |c type indicator");
+            assert!(
+                formatted.ends_with("|c"),
+                "Should end with |c type indicator"
+            );
             assert!(
                 formatted.contains(':'),
                 "Should contain : separator between name and value"
@@ -298,7 +299,10 @@ mod tests {
         let addr = receiver.local_addr().unwrap();
 
         let exporter = StatsdExporter::new(&addr.to_string());
-        assert!(exporter.is_ok(), "Should create exporter for valid endpoint");
+        assert!(
+            exporter.is_ok(),
+            "Should create exporter for valid endpoint"
+        );
     }
 
     /// Test that send_counter sends correctly formatted data over UDP.
@@ -366,7 +370,11 @@ mod tests {
             }
         }
 
-        assert_eq!(received_messages.len(), 5, "Should receive 5 metric packets");
+        assert_eq!(
+            received_messages.len(),
+            5,
+            "Should receive 5 metric packets"
+        );
         assert!(received_messages.contains(&"tlapix.certificates.discovered:10|c".to_string()));
         assert!(received_messages.contains(&"tlapix.anomalies.detected:3|c".to_string()));
         assert!(received_messages.contains(&"tlapix.predictions.generated:7|c".to_string()));
@@ -388,10 +396,7 @@ mod tests {
         counters.inc_actions_executed();
         counters.inc_actions_failed();
 
-        assert_eq!(
-            counters.certificates_discovered.load(Ordering::Relaxed),
-            2
-        );
+        assert_eq!(counters.certificates_discovered.load(Ordering::Relaxed), 2);
         assert_eq!(counters.anomalies_detected.load(Ordering::Relaxed), 1);
         assert_eq!(counters.predictions_generated.load(Ordering::Relaxed), 1);
         assert_eq!(counters.actions_executed.load(Ordering::Relaxed), 3);
@@ -403,10 +408,7 @@ mod tests {
     fn test_metric_counters_default_zero() {
         let counters = MetricCounters::new();
 
-        assert_eq!(
-            counters.certificates_discovered.load(Ordering::Relaxed),
-            0
-        );
+        assert_eq!(counters.certificates_discovered.load(Ordering::Relaxed), 0);
         assert_eq!(counters.anomalies_detected.load(Ordering::Relaxed), 0);
         assert_eq!(counters.predictions_generated.load(Ordering::Relaxed), 0);
         assert_eq!(counters.actions_executed.load(Ordering::Relaxed), 0);
@@ -439,9 +441,7 @@ mod tests {
 
         let exporter = Arc::new(StatsdExporter::new(&addr.to_string()).unwrap());
         let counters = Arc::new(MetricCounters::new());
-        counters
-            .certificates_discovered
-            .store(1, Ordering::Relaxed);
+        counters.certificates_discovered.store(1, Ordering::Relaxed);
 
         let cancel = tokio_util::sync::CancellationToken::new();
         let handle = start_periodic_flush(exporter, counters, 1, cancel.clone());

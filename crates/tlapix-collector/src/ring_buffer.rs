@@ -5,10 +5,10 @@
 
 use std::sync::Arc;
 
-use tokio::sync::mpsc;
-use tokio_util::sync::CancellationToken;
 use tlapix_common::bpf::TlsCertEvent;
 use tlapix_common::types::CertificateMetadata;
+use tokio::sync::mpsc;
+use tokio_util::sync::CancellationToken;
 
 use crate::event_processor::{self, EventProcessError, ProcessedEvent};
 
@@ -325,13 +325,10 @@ mod tests {
         tx.send(event).await.unwrap();
 
         // Receive the processed event
-        let collector_event = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            rx.recv(),
-        )
-        .await
-        .expect("timeout waiting for event")
-        .expect("channel closed");
+        let collector_event = tokio::time::timeout(std::time::Duration::from_secs(2), rx.recv())
+            .await
+            .expect("timeout waiting for event")
+            .expect("channel closed");
 
         assert!(!collector_event.is_truncated);
         assert!(collector_event.is_new);
@@ -376,13 +373,10 @@ mod tests {
         tx.send(valid_event).await.unwrap();
 
         // The malformed event should be skipped, and we should get the valid one
-        let collector_event = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            rx.recv(),
-        )
-        .await
-        .expect("timeout waiting for event")
-        .expect("channel closed");
+        let collector_event = tokio::time::timeout(std::time::Duration::from_secs(2), rx.recv())
+            .await
+            .expect("timeout waiting for event")
+            .expect("channel closed");
 
         assert!(!collector_event.is_truncated);
 
@@ -401,12 +395,9 @@ mod tests {
         cancel.cancel();
 
         // The channel should close
-        let result = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            rx.recv(),
-        )
-        .await
-        .expect("timeout");
+        let result = tokio::time::timeout(std::time::Duration::from_secs(2), rx.recv())
+            .await
+            .expect("timeout");
 
         assert!(result.is_none());
     }

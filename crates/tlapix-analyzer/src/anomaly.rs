@@ -71,10 +71,7 @@ impl AnomalyDetector {
     }
 
     /// Generate `ActionDirective` entries for all detected anomalies.
-    pub fn generate_directives(
-        &self,
-        metadata: &CertificateMetadata,
-    ) -> Vec<ActionDirective> {
+    pub fn generate_directives(&self, metadata: &CertificateMetadata) -> Vec<ActionDirective> {
         let anomalies = self.detect(metadata);
         let now = Utc::now();
 
@@ -256,9 +253,7 @@ impl AnomalyDetector {
                     sni, san_list
                 )
             }
-            AnomalyType::ExpiredCertificate => {
-                "Certificate has expired".to_string()
-            }
+            AnomalyType::ExpiredCertificate => "Certificate has expired".to_string(),
             AnomalyType::NearExpiry { days_remaining } => {
                 format!(
                     "Certificate expires in {} days (threshold: {} days)",
@@ -274,7 +269,6 @@ impl AnomalyDetector {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -312,7 +306,11 @@ mod tests {
         let detector = AnomalyDetector::with_defaults();
         let metadata = make_metadata();
         let anomalies = detector.detect(&metadata);
-        assert!(anomalies.is_empty(), "Expected no anomalies, got: {:?}", anomalies);
+        assert!(
+            anomalies.is_empty(),
+            "Expected no anomalies, got: {:?}",
+            anomalies
+        );
     }
 
     #[test]
@@ -325,7 +323,10 @@ mod tests {
 
         let anomalies = detector.detect(&metadata);
         assert_eq!(anomalies.len(), 1);
-        assert!(matches!(anomalies[0].0, AnomalyType::PolicyViolation { .. }));
+        assert!(matches!(
+            anomalies[0].0,
+            AnomalyType::PolicyViolation { .. }
+        ));
         assert_eq!(anomalies[0].1, Severity::Medium);
     }
 
@@ -534,7 +535,10 @@ mod tests {
 
         let anomalies = detector.detect(&metadata);
         assert_eq!(anomalies.len(), 1);
-        assert!(matches!(anomalies[0].0, AnomalyType::WeakCryptography { .. }));
+        assert!(matches!(
+            anomalies[0].0,
+            AnomalyType::WeakCryptography { .. }
+        ));
     }
 
     #[test]

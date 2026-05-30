@@ -218,8 +218,7 @@ async fn run_daemon(config: TlapixConfig, cancel_token: CancellationToken) -> Re
     // Step 6: Start Observability services
     // -----------------------------------------------------------------------
     info!("Starting Observability services...");
-    let _observability_handle =
-        start_observability(&config, cancel_token.clone()).await?;
+    let _observability_handle = start_observability(&config, cancel_token.clone()).await?;
     info!("Observability services started");
 
     // -----------------------------------------------------------------------

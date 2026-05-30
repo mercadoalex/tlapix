@@ -83,11 +83,8 @@ impl RenewalPredictor {
         let renewal_activity_detected = self.has_renewal_activity(history, days_until_expiry);
 
         // Calculate failure probability
-        let failure_probability = self.calculate_probability(
-            days_until_expiry,
-            history,
-            renewal_activity_detected,
-        );
+        let failure_probability =
+            self.calculate_probability(days_until_expiry, history, renewal_activity_detected);
 
         // Determine severity
         let severity = self.determine_severity(days_until_expiry, renewal_activity_detected);
@@ -126,7 +123,11 @@ impl RenewalPredictor {
     }
 
     /// Check if renewal activity has been detected based on historical data.
-    fn has_renewal_activity(&self, history: Option<&RenewalHistory>, days_until_expiry: i32) -> bool {
+    fn has_renewal_activity(
+        &self,
+        history: Option<&RenewalHistory>,
+        days_until_expiry: i32,
+    ) -> bool {
         match history {
             Some(h) => {
                 // If there are previous renewals and the average renewal timing
@@ -137,7 +138,9 @@ impl RenewalPredictor {
                 // Consider renewal activity detected if the average previous renewal
                 // happened at a point further from expiry than we currently are,
                 // meaning the renewal process should already be underway.
-                let avg_renewal_day: f64 = h.previous_renewal_days.iter()
+                let avg_renewal_day: f64 = h
+                    .previous_renewal_days
+                    .iter()
                     .map(|&d| d as f64)
                     .sum::<f64>()
                     / h.previous_renewal_days.len() as f64;
@@ -288,10 +291,7 @@ impl RenewalPredictor {
                 -days_until_expiry
             ));
         } else {
-            parts.push(format!(
-                "Certificate expires in {} days",
-                days_until_expiry
-            ));
+            parts.push(format!("Certificate expires in {} days", days_until_expiry));
         }
 
         parts.push(format!(
@@ -309,7 +309,9 @@ impl RenewalPredictor {
             None => parts.push("No historical renewal data available".to_string()),
             Some(h) => {
                 if !h.previous_renewal_days.is_empty() {
-                    let avg: f64 = h.previous_renewal_days.iter()
+                    let avg: f64 = h
+                        .previous_renewal_days
+                        .iter()
                         .map(|&d| d as f64)
                         .sum::<f64>()
                         / h.previous_renewal_days.len() as f64;
@@ -381,7 +383,10 @@ mod tests {
         let cert = make_cert(now + Duration::days(31));
 
         let result = predictor.predict(&cert, None);
-        assert!(result.is_none(), "Should not generate prediction for >30 days");
+        assert!(
+            result.is_none(),
+            "Should not generate prediction for >30 days"
+        );
     }
 
     #[test]

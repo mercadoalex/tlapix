@@ -74,10 +74,7 @@ impl AiBackend {
                     path = %model_path.display(),
                     "AI model loaded successfully"
                 );
-                (
-                    Some(session),
-                    AnalyzerMode::AiPowered,
-                )
+                (Some(session), AnalyzerMode::AiPowered)
             }
             Err(e) => {
                 let reason = format!("Failed to load model: {}", e);
@@ -115,8 +112,7 @@ impl AiBackend {
             anyhow::bail!("Model file not found: {}", model_path.display());
         }
 
-        let session = Session::builder()?
-            .commit_from_file(model_path)?;
+        let session = Session::builder()?.commit_from_file(model_path)?;
 
         Ok(session)
     }
@@ -158,10 +154,7 @@ impl AiBackend {
                 Err(AiBackendError::InferenceError(e.to_string()))
             }
             Err(_) => {
-                let reason = format!(
-                    "Inference timed out after {} seconds",
-                    timeout.as_secs()
-                );
+                let reason = format!("Inference timed out after {} seconds", timeout.as_secs());
                 error!(
                     timeout_secs = timeout.as_secs(),
                     "AI inference timed out, switching to fallback mode"
@@ -273,10 +266,7 @@ impl AnalyzerService {
     ///
     /// If the AI backend is available, combines AI results with rule-based results.
     /// If the AI backend is unavailable, uses rule-based detection only.
-    pub async fn evaluate(
-        &self,
-        metadata: &CertificateMetadata,
-    ) -> Vec<(AnomalyType, Severity)> {
+    pub async fn evaluate(&self, metadata: &CertificateMetadata) -> Vec<(AnomalyType, Severity)> {
         // Always run rule-based detection
         let rule_anomalies = self.rule_detector.detect(metadata);
 
@@ -386,7 +376,10 @@ mod tests {
 
         let result = rt.block_on(backend.evaluate(&metadata));
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AiBackendError::InFallbackMode));
+        assert!(matches!(
+            result.unwrap_err(),
+            AiBackendError::InFallbackMode
+        ));
     }
 
     #[tokio::test]
@@ -421,10 +414,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_analyzer_service_with_nonexistent_model_falls_back() {
-        let service = AnalyzerService::with_model(
-            PathBuf::from("/tmp/nonexistent_model_xyz.onnx"),
-            5,
-        );
+        let service =
+            AnalyzerService::with_model(PathBuf::from("/tmp/nonexistent_model_xyz.onnx"), 5);
 
         // Should be in fallback mode
         let mode = service.health_check().await;

@@ -18,9 +18,7 @@ use tracing;
 use uuid::Uuid;
 
 use tlapix_common::config::InventorySource;
-use tlapix_common::storage::{
-    CertificateInventoryRow, InventoryRefreshLogRow, Storage,
-};
+use tlapix_common::storage::{CertificateInventoryRow, InventoryRefreshLogRow, Storage};
 
 // ---------------------------------------------------------------------------
 // Error types
@@ -136,8 +134,7 @@ impl InventoryManager {
     /// The loop runs until the `cancel` token is cancelled.
     pub fn start(self: Arc<Self>, cancel: CancellationToken) -> JoinHandle<()> {
         tokio::spawn(async move {
-            let mut interval =
-                tokio::time::interval(Duration::from_secs(self.poll_interval_secs));
+            let mut interval = tokio::time::interval(Duration::from_secs(self.poll_interval_secs));
 
             loop {
                 tokio::select! {
@@ -336,7 +333,10 @@ impl InventoryManager {
     // -----------------------------------------------------------------------
 
     /// Import entries from a JSON file.
-    async fn import_from_file(&self, path: &std::path::Path) -> InventoryResult<Vec<RawInventoryEntry>> {
+    async fn import_from_file(
+        &self,
+        path: &std::path::Path,
+    ) -> InventoryResult<Vec<RawInventoryEntry>> {
         let content = tokio::fs::read_to_string(path).await?;
         let entries: Vec<RawInventoryEntry> = serde_json::from_str(&content)?;
         Ok(entries)
@@ -400,10 +400,7 @@ impl InventoryManager {
 /// Accepts both with and without colons/spaces as separators.
 fn parse_hex_fingerprint(hex: &str) -> Option<[u8; 32]> {
     // Remove common separators
-    let clean: String = hex
-        .chars()
-        .filter(|c| c.is_ascii_hexdigit())
-        .collect();
+    let clean: String = hex.chars().filter(|c| c.is_ascii_hexdigit()).collect();
 
     if clean.len() != 64 {
         return None;
@@ -542,16 +539,14 @@ mod tests {
         // Simulate a refresh that happened 61 minutes ago
         {
             let mut state = manager.state.write().await;
-            state.last_successful_refresh =
-                Some(Utc::now() - chrono::Duration::minutes(61));
+            state.last_successful_refresh = Some(Utc::now() - chrono::Duration::minutes(61));
         }
         assert!(manager.is_stale().await);
 
         // Simulate a recent refresh
         {
             let mut state = manager.state.write().await;
-            state.last_successful_refresh =
-                Some(Utc::now() - chrono::Duration::minutes(5));
+            state.last_successful_refresh = Some(Utc::now() - chrono::Duration::minutes(5));
         }
         assert!(!manager.is_stale().await);
     }

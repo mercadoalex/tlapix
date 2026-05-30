@@ -13,14 +13,14 @@ use tlapix_common::storage::{ActionDirectiveRow, Storage};
 use tlapix_common::types::{
     ActionDirective, ActionType, CertificateMetadata, ExecutionOutcome, Severity,
 };
-use tlapix_executor::expiry::{expire_stale_directives, resolve_conflicts, BpfMapWriter, BpfMapError};
+use tlapix_executor::expiry::{
+    expire_stale_directives, resolve_conflicts, BpfMapError, BpfMapWriter,
+};
 use tlapix_executor::failure_handler::handle_execution_failure;
 use tlapix_executor::integrity::{
     compute_sha256, validate_program_integrity, ProgramEntry, ProgramManifest,
 };
-use tlapix_executor::map_writer::{
-    MapWriteError, MockBpfMapWriter as AsyncMockBpfMapWriter,
-};
+use tlapix_executor::map_writer::{MapWriteError, MockBpfMapWriter as AsyncMockBpfMapWriter};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -46,7 +46,10 @@ impl BpfMapWriter for MockBpfMapWriterSync {
     }
 }
 
-fn make_test_certificate(fingerprint: [u8; 32], last_seen: chrono::DateTime<Utc>) -> CertificateMetadata {
+fn make_test_certificate(
+    fingerprint: [u8; 32],
+    last_seen: chrono::DateTime<Utc>,
+) -> CertificateMetadata {
     let now = Utc::now();
     CertificateMetadata {
         fingerprint,

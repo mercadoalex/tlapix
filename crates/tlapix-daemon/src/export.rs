@@ -91,10 +91,7 @@ impl ExportService {
     ///
     /// Initializes all configured export channels. Channels with `None`
     /// configuration are disabled and will not receive events.
-    pub fn new(
-        config: &ObservabilityConfig,
-        webhook_configs: Vec<WebhookConfig>,
-    ) -> Result<Self> {
+    pub fn new(config: &ObservabilityConfig, webhook_configs: Vec<WebhookConfig>) -> Result<Self> {
         // Initialize OTLP if endpoint is configured
         let otlp = if config.otlp_endpoint.is_some() {
             Some(MetricsService::init(config)?)
@@ -106,21 +103,20 @@ impl ExportService {
         let prometheus = config.prometheus_bind.map(|_| PrometheusMetrics::new());
 
         // Initialize StatsD if endpoint is configured
-        let (statsd, statsd_counters) =
-            if let Some(ref endpoint) = config.statsd_endpoint {
-                match StatsdExporter::new(endpoint) {
-                    Ok(exporter) => (
-                        Some(Arc::new(exporter)),
-                        Some(Arc::new(MetricCounters::new())),
-                    ),
-                    Err(e) => {
-                        warn!(error = %e, "Failed to initialize StatsD exporter");
-                        (None, None)
-                    }
+        let (statsd, statsd_counters) = if let Some(ref endpoint) = config.statsd_endpoint {
+            match StatsdExporter::new(endpoint) {
+                Ok(exporter) => (
+                    Some(Arc::new(exporter)),
+                    Some(Arc::new(MetricCounters::new())),
+                ),
+                Err(e) => {
+                    warn!(error = %e, "Failed to initialize StatsD exporter");
+                    (None, None)
                 }
-            } else {
-                (None, None)
-            };
+            }
+        } else {
+            (None, None)
+        };
 
         // Initialize webhooks if any endpoints are configured
         let webhooks = if webhook_configs.is_empty() {
@@ -352,18 +348,14 @@ mod tests {
     #[test]
     fn test_export_service_no_channels() {
         let config = config_all_disabled();
-        let service =
-            ExportService::new(&config, vec![]).expect("Should create with no channels");
+        let service = ExportService::new(&config, vec![]).expect("Should create with no channels");
         assert!(!service.has_any_channel());
     }
 
     #[test]
     fn test_export_service_with_prometheus() {
         let config = ObservabilityConfig {
-            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                0,
-            ))),
+            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))),
             ..config_all_disabled()
         };
         let service = ExportService::new(&config, vec![]).expect("Should create");
@@ -400,8 +392,7 @@ mod tests {
             retry_base_secs: 1,
         }];
         let config = config_all_disabled();
-        let service =
-            ExportService::new(&config, webhook_configs).expect("Should create");
+        let service = ExportService::new(&config, webhook_configs).expect("Should create");
         assert!(service.has_any_channel());
         assert!(service.webhooks().is_some());
     }
@@ -413,10 +404,7 @@ mod tests {
         let addr = receiver.local_addr().unwrap();
 
         let config = ObservabilityConfig {
-            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                0,
-            ))),
+            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))),
             statsd_endpoint: Some(addr.to_string()),
             ..config_all_disabled()
         };
@@ -426,8 +414,7 @@ mod tests {
             retry_max: 3,
             retry_base_secs: 1,
         }];
-        let service =
-            ExportService::new(&config, webhook_configs).expect("Should create");
+        let service = ExportService::new(&config, webhook_configs).expect("Should create");
         assert!(service.has_any_channel());
         assert!(service.prometheus().is_some());
         assert!(service.statsd().is_some());
@@ -437,10 +424,7 @@ mod tests {
     #[tokio::test]
     async fn test_record_event_prometheus_receives() {
         let config = ObservabilityConfig {
-            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                0,
-            ))),
+            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))),
             ..config_all_disabled()
         };
         let service = ExportService::new(&config, vec![]).expect("Should create");
@@ -450,19 +434,13 @@ mod tests {
 
         // Prometheus counter should be incremented
         let prom = service.prometheus().unwrap();
-        assert_eq!(
-            prom.certificates_discovered.load(Ordering::Relaxed),
-            1
-        );
+        assert_eq!(prom.certificates_discovered.load(Ordering::Relaxed), 1);
     }
 
     #[tokio::test]
     async fn test_record_event_multiple_increments() {
         let config = ObservabilityConfig {
-            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                0,
-            ))),
+            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))),
             ..config_all_disabled()
         };
         let service = ExportService::new(&config, vec![]).expect("Should create");
@@ -481,10 +459,7 @@ mod tests {
         // StatsD pointing to unreachable endpoint should not affect Prometheus
         // Use a non-routable address for StatsD
         let config = ObservabilityConfig {
-            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                0,
-            ))),
+            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))),
             statsd_endpoint: Some("192.0.2.1:1".to_string()),
             ..config_all_disabled()
         };
@@ -505,10 +480,7 @@ mod tests {
     async fn test_channel_failure_isolation_webhook_fails() {
         // Webhook pointing to unreachable endpoint should not affect Prometheus
         let config = ObservabilityConfig {
-            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                0,
-            ))),
+            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))),
             ..config_all_disabled()
         };
         let webhook_configs = vec![WebhookConfig {
@@ -517,8 +489,7 @@ mod tests {
             retry_max: 0, // no retries for speed
             retry_base_secs: 1,
         }];
-        let service =
-            ExportService::new(&config, webhook_configs).expect("Should create");
+        let service = ExportService::new(&config, webhook_configs).expect("Should create");
 
         // Use ActionsExecuted to trigger webhook dispatch
         let event = make_event(MetricName::ActionsExecuted);
@@ -533,10 +504,7 @@ mod tests {
     async fn test_disabled_channels_not_affected() {
         // Only Prometheus enabled — StatsD and webhooks are None
         let config = ObservabilityConfig {
-            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                0,
-            ))),
+            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))),
             ..config_all_disabled()
         };
         let service = ExportService::new(&config, vec![]).expect("Should create");
@@ -556,10 +524,7 @@ mod tests {
         let addr = receiver.local_addr().unwrap();
 
         let config = ObservabilityConfig {
-            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                0,
-            ))),
+            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))),
             statsd_endpoint: Some(addr.to_string()),
             ..config_all_disabled()
         };
@@ -569,8 +534,7 @@ mod tests {
             retry_max: 3,
             retry_base_secs: 1,
         }];
-        let service =
-            ExportService::new(&config, webhook_configs).expect("Should create");
+        let service = ExportService::new(&config, webhook_configs).expect("Should create");
 
         let status = service.channel_status().await;
         // OTLP is None (no endpoint configured), so it's Disabled
@@ -630,10 +594,7 @@ mod tests {
     #[tokio::test]
     async fn test_webhook_degraded_status_on_failure() {
         let config = ObservabilityConfig {
-            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(
-                Ipv4Addr::LOCALHOST,
-                0,
-            ))),
+            prometheus_bind: Some(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0))),
             ..config_all_disabled()
         };
         let webhook_configs = vec![WebhookConfig {
@@ -642,8 +603,7 @@ mod tests {
             retry_max: 0,
             retry_base_secs: 1,
         }];
-        let service =
-            ExportService::new(&config, webhook_configs).expect("Should create");
+        let service = ExportService::new(&config, webhook_configs).expect("Should create");
 
         // Trigger an action event that dispatches webhooks
         let event = make_event(MetricName::ActionsExecuted);

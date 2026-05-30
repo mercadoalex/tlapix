@@ -10,9 +10,7 @@ use thiserror::Error;
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
-use tlapix_common::{
-    ActionDirective, ActionType, BpfActionEntry, ExecutionOutcome,
-};
+use tlapix_common::{ActionDirective, ActionType, BpfActionEntry, ExecutionOutcome};
 
 // ---------------------------------------------------------------------------
 // Helper
@@ -42,7 +40,10 @@ pub enum MapWriteError {
 
     /// Total memory across all maps would exceed the configured cap.
     #[error("total memory cap exceeded ({current_bytes}/{max_bytes} bytes)")]
-    MemoryCapExceeded { current_bytes: usize, max_bytes: usize },
+    MemoryCapExceeded {
+        current_bytes: usize,
+        max_bytes: usize,
+    },
 
     /// A transient write failure (retryable).
     #[error("write failed: {reason}")]
@@ -228,10 +229,7 @@ impl MapWriterService {
     ///
     /// Returns `ExecutionOutcome::Success` on success, or an appropriate
     /// failure/map-full outcome.
-    pub async fn write_directive(
-        &self,
-        directive: &ActionDirective,
-    ) -> ExecutionOutcome {
+    pub async fn write_directive(&self, directive: &ActionDirective) -> ExecutionOutcome {
         let map_ref = self.select_map(&directive.action_type);
         let map_name = Self::map_name(&directive.action_type);
         let entry = Self::directive_to_entry(directive);
@@ -281,10 +279,7 @@ impl MapWriterService {
         let mut last_error = String::new();
         for attempt in 0..self.max_retries {
             let map = map_ref.lock().await;
-            match map
-                .write_entry(directive.cert_fingerprint, entry)
-                .await
-            {
+            match map.write_entry(directive.cert_fingerprint, entry).await {
                 Ok(()) => {
                     info!(
                         map = map_name,
@@ -297,8 +292,7 @@ impl MapWriterService {
                     last_error = e.to_string();
                     drop(map); // release lock before sleeping
                     if attempt < self.max_retries - 1 {
-                        let delay_ms =
-                            self.retry_base_ms * 2u64.pow(attempt as u32);
+                        let delay_ms = self.retry_base_ms * 2u64.pow(attempt as u32);
                         warn!(
                             map = map_name,
                             attempt = attempt + 1,
@@ -307,10 +301,7 @@ impl MapWriterService {
                             error = %e,
                             "BPF map write failed, retrying"
                         );
-                        tokio::time::sleep(
-                            std::time::Duration::from_millis(delay_ms),
-                        )
-                        .await;
+                        tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
                     }
                 }
             }
@@ -369,9 +360,7 @@ impl MockBpfMapWriter {
     }
 
     /// Get a snapshot of all entries currently in the mock map.
-    pub async fn get_entries(
-        &self,
-    ) -> std::collections::HashMap<[u8; 32], BpfActionEntry> {
+    pub async fn get_entries(&self) -> std::collections::HashMap<[u8; 32], BpfActionEntry> {
         self.entries.lock().await.clone()
     }
 }
@@ -483,10 +472,7 @@ mod tests {
         }
     }
 
-    fn make_directive_with_fp(
-        action_type: ActionType,
-        fingerprint: [u8; 32],
-    ) -> ActionDirective {
+    fn make_directive_with_fp(action_type: ActionType, fingerprint: [u8; 32]) -> ActionDirective {
         ActionDirective {
             id: Uuid::new_v4(),
             correlation_id: Uuid::new_v4(),
@@ -512,9 +498,7 @@ mod tests {
         )
     }
 
-    fn create_service_with_notifier(
-        max_entries: usize,
-    ) -> (MapWriterService, Arc<MockNotifier>) {
+    fn create_service_with_notifier(max_entries: usize) -> (MapWriterService, Arc<MockNotifier>) {
         let notifier = Arc::new(MockNotifier::new());
         let service = MapWriterService::new(
             Box::new(MockBpfMapWriter::new(max_entries)),
@@ -769,10 +753,7 @@ mod tests {
             self.inner.write_entry(fingerprint, entry).await
         }
 
-        async fn remove_entry(
-            &self,
-            fingerprint: [u8; 32],
-        ) -> Result<(), MapWriteError> {
+        async fn remove_entry(&self, fingerprint: [u8; 32]) -> Result<(), MapWriteError> {
             self.inner.remove_entry(fingerprint).await
         }
 

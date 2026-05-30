@@ -111,8 +111,7 @@ pub async fn reconcile_inventory(
 
     // Phase 2: Known → Shadow
     // For each removed fingerprint, check if the certificate is still in traffic.
-    let twenty_four_hours_ago_ms =
-        Utc::now().timestamp_millis() - (24 * 60 * 60 * 1000);
+    let twenty_four_hours_ago_ms = Utc::now().timestamp_millis() - (24 * 60 * 60 * 1000);
 
     for fingerprint in removed_fingerprints {
         // Check if the certificate is still observed in traffic (last_seen within 24h)
@@ -194,13 +193,14 @@ fn format_fingerprint(fp: &[u8; 32]) -> String {
 mod tests {
     use super::*;
     use chrono::{Duration, Utc};
-    use tlapix_common::storage::{
-        ActionDirectiveRow, CertificateInventoryRow, Storage,
-    };
+    use tlapix_common::storage::{ActionDirectiveRow, CertificateInventoryRow, Storage};
     use tlapix_common::types::CertificateMetadata;
 
     /// Helper to create a test certificate with a given fingerprint and last_seen.
-    fn make_test_cert(fingerprint: [u8; 32], last_seen: chrono::DateTime<Utc>) -> CertificateMetadata {
+    fn make_test_cert(
+        fingerprint: [u8; 32],
+        last_seen: chrono::DateTime<Utc>,
+    ) -> CertificateMetadata {
         let now = Utc::now();
         CertificateMetadata {
             fingerprint,
@@ -333,14 +333,22 @@ mod tests {
         assert_eq!(result.directives_cancelled, 2);
 
         // Verify directives are expired
-        let d1 = storage.get_action_directive("dir-001").await.unwrap().unwrap();
+        let d1 = storage
+            .get_action_directive("dir-001")
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(d1.status, "expired");
         assert_eq!(
             d1.failure_reason.as_deref(),
             Some("Certificate appeared in inventory; shadow resolved")
         );
 
-        let d2 = storage.get_action_directive("dir-002").await.unwrap().unwrap();
+        let d2 = storage
+            .get_action_directive("dir-002")
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(d2.status, "expired");
     }
 
@@ -432,7 +440,10 @@ mod tests {
         let cert_resolve = make_test_cert(fp_resolve, Utc::now());
         storage.upsert_certificate(&cert_resolve).await.unwrap();
         let shadow_resolve = make_shadow_row(fp_resolve);
-        storage.upsert_shadow_certificate(&shadow_resolve).await.unwrap();
+        storage
+            .upsert_shadow_certificate(&shadow_resolve)
+            .await
+            .unwrap();
         let dir = make_pending_directive(fp_resolve, "dir-resolve");
         storage.insert_action_directive(&dir).await.unwrap();
 
@@ -452,7 +463,9 @@ mod tests {
         storage.upsert_certificate(&cert_new_shadow).await.unwrap();
 
         // Run reconciliation with fp_new_shadow as removed
-        let result = reconcile_inventory(&storage, &[fp_new_shadow]).await.unwrap();
+        let result = reconcile_inventory(&storage, &[fp_new_shadow])
+            .await
+            .unwrap();
 
         assert_eq!(result.shadows_resolved, 1);
         assert_eq!(result.directives_cancelled, 1);

@@ -150,8 +150,7 @@ impl WebhookDispatcher {
                         // For attempt 1 (first retry): base * 1 = 1s
                         // For attempt 2 (second retry): base * 2 = 2s
                         // For attempt 3 (third retry): base * 4 = 4s
-                        let backoff_secs =
-                            config.retry_base_secs * 2u64.pow((attempt - 1) as u32);
+                        let backoff_secs = config.retry_base_secs * 2u64.pow((attempt - 1) as u32);
                         warn!(
                             endpoint = %config.endpoint,
                             attempt,
@@ -214,7 +213,11 @@ impl WebhookDispatcher {
         if status.is_success() {
             Ok(())
         } else {
-            Err(format!("non-2xx response: {} {}", status.as_u16(), status.canonical_reason().unwrap_or("Unknown")))
+            Err(format!(
+                "non-2xx response: {} {}",
+                status.as_u16(),
+                status.canonical_reason().unwrap_or("Unknown")
+            ))
         }
     }
 
@@ -457,8 +460,7 @@ mod integration_tests {
         let requests = mock_server.received_requests().await.unwrap();
         assert_eq!(requests.len(), 1);
 
-        let body: serde_json::Value =
-            serde_json::from_slice(&requests[0].body).unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&requests[0].body).unwrap();
 
         // Verify all required fields are present (Requirement 10.9)
         assert_eq!(body["correlation_id"], "corr-integration-001");
@@ -657,9 +659,9 @@ mod integration_tests {
         // Respond with a 2-second delay (exceeds our 1s timeout)
         Mock::given(method("POST"))
             .respond_with(
-                ResponseTemplate::new(200).set_body_string("ok").set_delay(
-                    std::time::Duration::from_secs(2),
-                ),
+                ResponseTemplate::new(200)
+                    .set_body_string("ok")
+                    .set_delay(std::time::Duration::from_secs(2)),
             )
             .mount(&mock_server)
             .await;

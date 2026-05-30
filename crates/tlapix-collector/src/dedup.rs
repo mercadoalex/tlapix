@@ -18,10 +18,10 @@ use std::sync::Arc;
 
 use chrono::Utc;
 use lru::LruCache;
-use tokio::sync::mpsc;
-use tokio_util::sync::CancellationToken;
 use tlapix_common::storage::Storage;
 use tlapix_common::types::CertificateMetadata;
+use tokio::sync::mpsc;
+use tokio_util::sync::CancellationToken;
 use tracing;
 
 use crate::ring_buffer::CollectorEvent;
@@ -206,8 +206,7 @@ impl DeduplicationEngine {
         storage: Storage,
         cancel: CancellationToken,
     ) -> mpsc::Receiver<CertificateMetadata> {
-        let (output_tx, output_rx) =
-            mpsc::channel(DEFAULT_OUTPUT_CHANNEL_CAPACITY);
+        let (output_tx, output_rx) = mpsc::channel(DEFAULT_OUTPUT_CHANNEL_CAPACITY);
         let stats = self.stats.clone();
 
         tokio::spawn(async move {
@@ -269,8 +268,7 @@ impl DeduplicationEngine {
             stats.duplicates_seen.fetch_add(1, Ordering::Relaxed);
 
             // Update last_seen and increment connection_count in SQLite
-            if let Err(e) = storage.touch_certificate(&fingerprint, now_ms).await
-            {
+            if let Err(e) = storage.touch_certificate(&fingerprint, now_ms).await {
                 tracing::warn!(
                     error = %e,
                     fingerprint = %hex_encode(fingerprint),
@@ -293,9 +291,7 @@ impl DeduplicationEngine {
 
             // Forward unique metadata downstream to the Analyzer
             if output_tx.send(event.metadata).await.is_err() {
-                tracing::warn!(
-                    "downstream output channel closed, dedup cannot forward"
-                );
+                tracing::warn!("downstream output channel closed, dedup cannot forward");
             }
         }
     }
@@ -587,22 +583,16 @@ mod tests {
         input_tx.send(make_collector_event(fp2)).await.unwrap();
 
         // Both should be forwarded
-        let out1 = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            output_rx.recv(),
-        )
-        .await
-        .expect("timeout")
-        .expect("channel closed");
+        let out1 = tokio::time::timeout(std::time::Duration::from_secs(2), output_rx.recv())
+            .await
+            .expect("timeout")
+            .expect("channel closed");
         assert_eq!(out1.fingerprint, fp1);
 
-        let out2 = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            output_rx.recv(),
-        )
-        .await
-        .expect("timeout")
-        .expect("channel closed");
+        let out2 = tokio::time::timeout(std::time::Duration::from_secs(2), output_rx.recv())
+            .await
+            .expect("timeout")
+            .expect("channel closed");
         assert_eq!(out2.fingerprint, fp2);
 
         let s = stats.snapshot();
@@ -630,24 +620,18 @@ mod tests {
         input_tx.send(make_collector_event(fp)).await.unwrap();
 
         // Only the first should be forwarded
-        let out = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            output_rx.recv(),
-        )
-        .await
-        .expect("timeout")
-        .expect("channel closed");
+        let out = tokio::time::timeout(std::time::Duration::from_secs(2), output_rx.recv())
+            .await
+            .expect("timeout")
+            .expect("channel closed");
         assert_eq!(out.fingerprint, fp);
 
         // Give the engine time to process remaining events
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
         // No more events should be available
-        let maybe = tokio::time::timeout(
-            std::time::Duration::from_millis(200),
-            output_rx.recv(),
-        )
-        .await;
+        let maybe =
+            tokio::time::timeout(std::time::Duration::from_millis(200), output_rx.recv()).await;
         assert!(maybe.is_err(), "expected timeout, got an event");
 
         let s = stats.snapshot();
@@ -673,13 +657,10 @@ mod tests {
         input_tx.send(make_collector_event(fp)).await.unwrap();
 
         // Wait for the first to be forwarded
-        let _ = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            output_rx.recv(),
-        )
-        .await
-        .expect("timeout")
-        .expect("channel closed");
+        let _ = tokio::time::timeout(std::time::Duration::from_secs(2), output_rx.recv())
+            .await
+            .expect("timeout")
+            .expect("channel closed");
 
         // Send duplicate
         input_tx.send(make_collector_event(fp)).await.unwrap();
@@ -710,12 +691,9 @@ mod tests {
         cancel.cancel();
 
         // Output channel should close
-        let result = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            output_rx.recv(),
-        )
-        .await
-        .expect("timeout");
+        let result = tokio::time::timeout(std::time::Duration::from_secs(2), output_rx.recv())
+            .await
+            .expect("timeout");
         assert!(result.is_none());
     }
 
@@ -738,26 +716,20 @@ mod tests {
 
         // All 4 should be forwarded as unique
         for fp in &fps {
-            let out = tokio::time::timeout(
-                std::time::Duration::from_secs(2),
-                output_rx.recv(),
-            )
-            .await
-            .expect("timeout")
-            .expect("channel closed");
+            let out = tokio::time::timeout(std::time::Duration::from_secs(2), output_rx.recv())
+                .await
+                .expect("timeout")
+                .expect("channel closed");
             assert_eq!(out.fingerprint, *fp);
         }
 
         // Now send the first fingerprint again — it was evicted from cache,
         // so it should be forwarded again as "new"
         input_tx.send(make_collector_event(fps[0])).await.unwrap();
-        let out = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            output_rx.recv(),
-        )
-        .await
-        .expect("timeout")
-        .expect("channel closed");
+        let out = tokio::time::timeout(std::time::Duration::from_secs(2), output_rx.recv())
+            .await
+            .expect("timeout")
+            .expect("channel closed");
         assert_eq!(out.fingerprint, fps[0]);
 
         let s = stats.snapshot();
@@ -795,13 +767,10 @@ mod tests {
         input_tx.send(make_collector_event(new_fp)).await.unwrap();
 
         // Only the new one should come through
-        let out = tokio::time::timeout(
-            std::time::Duration::from_secs(2),
-            output_rx.recv(),
-        )
-        .await
-        .expect("timeout")
-        .expect("channel closed");
+        let out = tokio::time::timeout(std::time::Duration::from_secs(2), output_rx.recv())
+            .await
+            .expect("timeout")
+            .expect("channel closed");
         assert_eq!(out.fingerprint, new_fp);
 
         // Give time for processing

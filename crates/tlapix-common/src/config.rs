@@ -68,7 +68,10 @@ pub enum InventorySource {
     /// File-based inventory (e.g., CSV or JSON file)
     File { path: PathBuf },
     /// API-based inventory with authentication
-    Api { endpoint: String, auth_token: String },
+    Api {
+        endpoint: String,
+        auth_token: String,
+    },
 }
 
 /// Configuration for the Executor layer.

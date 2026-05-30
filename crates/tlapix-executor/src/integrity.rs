@@ -52,10 +52,7 @@ pub enum IntegrityError {
 
     /// The program binary file was not found on disk.
     #[error("program file not found for '{program_name}': {path}")]
-    FileNotFound {
-        program_name: String,
-        path: PathBuf,
-    },
+    FileNotFound { program_name: String, path: PathBuf },
 
     /// An I/O error occurred while reading the program binary.
     #[error("I/O error reading program '{program_name}': {error}")]
@@ -335,10 +332,7 @@ mod tests {
         assert!(result.is_err());
 
         match result.unwrap_err() {
-            IntegrityError::FileNotFound {
-                program_name,
-                path,
-            } => {
+            IntegrityError::FileNotFound { program_name, path } => {
                 assert_eq!(program_name, "missing_program");
                 assert_eq!(path, PathBuf::from("/nonexistent/path/program.o"));
             }
@@ -348,9 +342,7 @@ mod tests {
 
     #[test]
     fn test_empty_manifest_passes() {
-        let manifest = ProgramManifest {
-            programs: vec![],
-        };
+        let manifest = ProgramManifest { programs: vec![] };
 
         let result = validate_program_integrity(&manifest);
         assert!(result.is_ok());

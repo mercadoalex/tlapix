@@ -218,10 +218,7 @@ mod tests {
 
     #[test]
     fn any_san_exact_match() {
-        let sans = vec![
-            "api.example.com".to_string(),
-            "www.example.com".to_string(),
-        ];
+        let sans = vec!["api.example.com".to_string(), "www.example.com".to_string()];
         assert!(sni_matches_any_san("www.example.com", &sans));
     }
 
@@ -236,10 +233,7 @@ mod tests {
 
     #[test]
     fn any_san_no_match() {
-        let sans = vec![
-            "www.example.com".to_string(),
-            "*.example.org".to_string(),
-        ];
+        let sans = vec!["www.example.com".to_string(), "*.example.org".to_string()];
         assert!(!sni_matches_any_san("www.other.net", &sans));
     }
 
@@ -251,10 +245,7 @@ mod tests {
 
     #[test]
     fn any_san_multiple_wildcards() {
-        let sans = vec![
-            "*.example.com".to_string(),
-            "*.example.org".to_string(),
-        ];
+        let sans = vec!["*.example.com".to_string(), "*.example.org".to_string()];
         assert!(sni_matches_any_san("www.example.com", &sans));
         assert!(sni_matches_any_san("api.example.org", &sans));
         assert!(!sni_matches_any_san("www.example.net", &sans));
@@ -263,10 +254,7 @@ mod tests {
     #[test]
     fn any_san_prefers_first_match() {
         // Both exact and wildcard match — function returns true regardless of which matches
-        let sans = vec![
-            "www.example.com".to_string(),
-            "*.example.com".to_string(),
-        ];
+        let sans = vec!["www.example.com".to_string(), "*.example.com".to_string()];
         assert!(sni_matches_any_san("www.example.com", &sans));
     }
 }

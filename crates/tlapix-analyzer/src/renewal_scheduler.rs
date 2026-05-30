@@ -14,9 +14,7 @@ use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 use tracing;
 
-use tlapix_common::storage::{
-    ActionDirectiveRow, RenewalPredictionRow, Storage,
-};
+use tlapix_common::storage::{ActionDirectiveRow, RenewalPredictionRow, Storage};
 use tlapix_common::types::Severity;
 
 use crate::renewal::{RenewalHistory, RenewalPredictor};
@@ -409,11 +407,7 @@ mod tests {
         let cancel = CancellationToken::new();
 
         // Start with a very short interval
-        let handle = RenewalScheduler::start(
-            storage,
-            StdDuration::from_millis(50),
-            cancel.clone(),
-        );
+        let handle = RenewalScheduler::start(storage, StdDuration::from_millis(50), cancel.clone());
 
         // Let it run briefly
         tokio::time::sleep(StdDuration::from_millis(100)).await;

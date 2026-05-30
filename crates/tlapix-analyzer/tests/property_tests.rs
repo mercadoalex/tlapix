@@ -7,8 +7,8 @@ use chrono::{Duration, Utc};
 use proptest::prelude::*;
 
 use tlapix_analyzer::anomaly::AnomalyDetector;
-use tlapix_analyzer::renewal::RenewalPredictor;
 use tlapix_analyzer::renewal::PredictionResult;
+use tlapix_analyzer::renewal::RenewalPredictor;
 use tlapix_analyzer::shadow::ShadowClassifier;
 use tlapix_analyzer::sni_match::{sni_matches_any_san, sni_matches_san};
 use tlapix_common::types::{

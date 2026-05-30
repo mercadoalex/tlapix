@@ -10,9 +10,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use tokio::sync::Mutex;
 use tracing;
 
-use crate::types::{
-    CertificateMetadata, RiskLevel,
-};
+use crate::types::{CertificateMetadata, RiskLevel};
 
 /// Errors that can occur during storage operations.
 #[derive(Debug, thiserror::Error)]
@@ -196,8 +194,7 @@ impl Storage {
             let not_after_ms = cert.not_after.timestamp_millis();
             let first_seen_ms = cert.first_seen.timestamp_millis();
             let last_seen_ms = cert.last_seen.timestamp_millis();
-            let issuer_fp: Option<Vec<u8>> =
-                cert.issuer_fingerprint.map(|fp| fp.to_vec());
+            let issuer_fp: Option<Vec<u8>> = cert.issuer_fingerprint.map(|fp| fp.to_vec());
 
             conn.execute(
                 "INSERT INTO certificates (
@@ -260,9 +257,7 @@ impl Storage {
                  FROM certificates WHERE fingerprint = ?1",
             )?;
             let result = stmt
-                .query_row(params![fp], |row| {
-                    Ok(row_to_certificate_metadata(row))
-                })
+                .query_row(params![fp], |row| Ok(row_to_certificate_metadata(row)))
                 .optional()?;
             match result {
                 Some(Ok(cert)) => Ok(Some(cert)),
@@ -345,9 +340,8 @@ impl Storage {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<Vec<[u8; 32]>> {
             let conn = conn.blocking_lock();
-            let mut stmt = conn.prepare(
-                "SELECT fingerprint FROM certificates ORDER BY last_seen DESC LIMIT ?1",
-            )?;
+            let mut stmt = conn
+                .prepare("SELECT fingerprint FROM certificates ORDER BY last_seen DESC LIMIT ?1")?;
             let rows = stmt.query_map(params![limit as i64], |row| {
                 let fp_blob: Vec<u8> = row.get(0)?;
                 Ok(fp_blob)
@@ -372,10 +366,7 @@ impl Storage {
     // -----------------------------------------------------------------------
 
     /// Insert a new action directive.
-    pub async fn insert_action_directive(
-        &self,
-        row: &ActionDirectiveRow,
-    ) -> StorageResult<()> {
+    pub async fn insert_action_directive(&self, row: &ActionDirectiveRow) -> StorageResult<()> {
         let row = row.clone();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<()> {
@@ -423,9 +414,7 @@ impl Storage {
                  FROM action_directives WHERE id = ?1",
             )?;
             let result = stmt
-                .query_row(params![id], |row| {
-                    Ok(row_to_action_directive(row))
-                })
+                .query_row(params![id], |row| Ok(row_to_action_directive(row)))
                 .optional()?;
             match result {
                 Some(Ok(r)) => Ok(Some(r)),
@@ -476,9 +465,7 @@ impl Storage {
                         created_at, executed_at, expired_at, failure_reason
                  FROM action_directives WHERE status = ?1",
             )?;
-            let rows = stmt.query_map(params![status], |row| {
-                Ok(row_to_action_directive(row))
-            })?;
+            let rows = stmt.query_map(params![status], |row| Ok(row_to_action_directive(row)))?;
             let mut results = Vec::new();
             for row in rows {
                 results.push(row??);
@@ -504,9 +491,7 @@ impl Storage {
                         created_at, executed_at, expired_at, failure_reason
                  FROM action_directives WHERE cert_fingerprint = ?1 AND status = 'pending'",
             )?;
-            let rows = stmt.query_map(params![fp], |row| {
-                Ok(row_to_action_directive(row))
-            })?;
+            let rows = stmt.query_map(params![fp], |row| Ok(row_to_action_directive(row)))?;
             let mut results = Vec::new();
             for row in rows {
                 results.push(row??);
@@ -546,10 +531,7 @@ impl Storage {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<()> {
             let conn = conn.blocking_lock();
-            conn.execute(
-                "DELETE FROM action_directives WHERE id = ?1",
-                params![id],
-            )?;
+            conn.execute("DELETE FROM action_directives WHERE id = ?1", params![id])?;
             Ok(())
         })
         .await
@@ -561,10 +543,7 @@ impl Storage {
     // -----------------------------------------------------------------------
 
     /// Insert or update a shadow certificate record.
-    pub async fn upsert_shadow_certificate(
-        &self,
-        row: &ShadowCertificateRow,
-    ) -> StorageResult<()> {
+    pub async fn upsert_shadow_certificate(&self, row: &ShadowCertificateRow) -> StorageResult<()> {
         let row = row.clone();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<()> {
@@ -616,9 +595,7 @@ impl Storage {
                  FROM shadow_certificates WHERE fingerprint = ?1",
             )?;
             let result = stmt
-                .query_row(params![fp], |row| {
-                    Ok(row_to_shadow_certificate(row))
-                })
+                .query_row(params![fp], |row| Ok(row_to_shadow_certificate(row)))
                 .optional()?;
             match result {
                 Some(Ok(r)) => Ok(Some(r)),
@@ -655,10 +632,7 @@ impl Storage {
     }
 
     /// Delete a shadow certificate by fingerprint.
-    pub async fn delete_shadow_certificate(
-        &self,
-        fingerprint: &[u8; 32],
-    ) -> StorageResult<()> {
+    pub async fn delete_shadow_certificate(&self, fingerprint: &[u8; 32]) -> StorageResult<()> {
         let fp = fingerprint.to_vec();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<()> {
@@ -678,10 +652,7 @@ impl Storage {
     // -----------------------------------------------------------------------
 
     /// Insert or update a renewal prediction.
-    pub async fn upsert_renewal_prediction(
-        &self,
-        row: &RenewalPredictionRow,
-    ) -> StorageResult<()> {
+    pub async fn upsert_renewal_prediction(&self, row: &RenewalPredictionRow) -> StorageResult<()> {
         let row = row.clone();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<()> {
@@ -732,9 +703,7 @@ impl Storage {
                  FROM renewal_predictions WHERE cert_fingerprint = ?1",
             )?;
             let result = stmt
-                .query_row(params![fp], |row| {
-                    Ok(row_to_renewal_prediction(row))
-                })
+                .query_row(params![fp], |row| Ok(row_to_renewal_prediction(row)))
                 .optional()?;
             match result {
                 Some(Ok(r)) => Ok(Some(r)),
@@ -747,10 +716,7 @@ impl Storage {
     }
 
     /// Delete a renewal prediction by certificate fingerprint.
-    pub async fn delete_renewal_prediction(
-        &self,
-        fingerprint: &[u8; 32],
-    ) -> StorageResult<()> {
+    pub async fn delete_renewal_prediction(&self, fingerprint: &[u8; 32]) -> StorageResult<()> {
         let fp = fingerprint.to_vec();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<()> {
@@ -766,9 +732,7 @@ impl Storage {
     }
 
     /// List all active renewal predictions.
-    pub async fn list_all_renewal_predictions(
-        &self,
-    ) -> StorageResult<Vec<RenewalPredictionRow>> {
+    pub async fn list_all_renewal_predictions(&self) -> StorageResult<Vec<RenewalPredictionRow>> {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<Vec<RenewalPredictionRow>> {
             let conn = conn.blocking_lock();
@@ -798,8 +762,8 @@ impl Storage {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<Vec<CertificateMetadata>> {
             let conn = conn.blocking_lock();
-            let cutoff_ms = chrono::Utc::now().timestamp_millis()
-                + (days as i64 * 24 * 60 * 60 * 1000);
+            let cutoff_ms =
+                chrono::Utc::now().timestamp_millis() + (days as i64 * 24 * 60 * 60 * 1000);
             let mut stmt = conn.prepare(
                 "SELECT fingerprint, subject, issuer, serial_number,
                         not_before, not_after, sans, key_algorithm, key_size,
@@ -884,11 +848,8 @@ impl Storage {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<u64> {
             let conn = conn.blocking_lock();
-            let count: i64 = conn.query_row(
-                "SELECT COUNT(*) FROM certificates",
-                [],
-                |row| row.get(0),
-            )?;
+            let count: i64 =
+                conn.query_row("SELECT COUNT(*) FROM certificates", [], |row| row.get(0))?;
             Ok(count as u64)
         })
         .await
@@ -972,10 +933,7 @@ impl Storage {
     // -----------------------------------------------------------------------
 
     /// Insert or update a certificate inventory entry.
-    pub async fn upsert_inventory_entry(
-        &self,
-        row: &CertificateInventoryRow,
-    ) -> StorageResult<()> {
+    pub async fn upsert_inventory_entry(&self, row: &CertificateInventoryRow) -> StorageResult<()> {
         let row = row.clone();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<()> {
@@ -1004,10 +962,7 @@ impl Storage {
     }
 
     /// Check if a fingerprint exists in the inventory.
-    pub async fn inventory_contains(
-        &self,
-        fingerprint: &[u8; 32],
-    ) -> StorageResult<bool> {
+    pub async fn inventory_contains(&self, fingerprint: &[u8; 32]) -> StorageResult<bool> {
         let fp = fingerprint.to_vec();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<bool> {
@@ -1024,10 +979,7 @@ impl Storage {
     }
 
     /// Remove inventory entries not updated in the given refresh.
-    pub async fn remove_stale_inventory_entries(
-        &self,
-        refresh_id: &str,
-    ) -> StorageResult<u64> {
+    pub async fn remove_stale_inventory_entries(&self, refresh_id: &str) -> StorageResult<u64> {
         let rid = refresh_id.to_string();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<u64> {
@@ -1043,10 +995,7 @@ impl Storage {
     }
 
     /// Delete an inventory entry by fingerprint.
-    pub async fn delete_inventory_entry(
-        &self,
-        fingerprint: &[u8; 32],
-    ) -> StorageResult<()> {
+    pub async fn delete_inventory_entry(&self, fingerprint: &[u8; 32]) -> StorageResult<()> {
         let fp = fingerprint.to_vec();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<()> {
@@ -1066,10 +1015,7 @@ impl Storage {
     // -----------------------------------------------------------------------
 
     /// Insert an inventory refresh log entry.
-    pub async fn insert_refresh_log(
-        &self,
-        row: &InventoryRefreshLogRow,
-    ) -> StorageResult<()> {
+    pub async fn insert_refresh_log(&self, row: &InventoryRefreshLogRow) -> StorageResult<()> {
         let row = row.clone();
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<()> {
@@ -1097,9 +1043,7 @@ impl Storage {
     }
 
     /// Get the most recent refresh log entry.
-    pub async fn get_latest_refresh_log(
-        &self,
-    ) -> StorageResult<Option<InventoryRefreshLogRow>> {
+    pub async fn get_latest_refresh_log(&self) -> StorageResult<Option<InventoryRefreshLogRow>> {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<Option<InventoryRefreshLogRow>> {
             let conn = conn.blocking_lock();
@@ -1127,10 +1071,7 @@ impl Storage {
 
     /// Delete certificates where `last_seen` is older than `retention_days` days.
     /// Returns the number of deleted records.
-    pub async fn cleanup_old_certificates(
-        &self,
-        retention_days: u32,
-    ) -> StorageResult<u64> {
+    pub async fn cleanup_old_certificates(&self, retention_days: u32) -> StorageResult<u64> {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<u64> {
             let conn = conn.blocking_lock();
@@ -1148,10 +1089,7 @@ impl Storage {
 
     /// Delete audit log entries older than `retention_days` days.
     /// Returns the number of deleted records.
-    pub async fn cleanup_old_audit_logs(
-        &self,
-        retention_days: u32,
-    ) -> StorageResult<u64> {
+    pub async fn cleanup_old_audit_logs(&self, retention_days: u32) -> StorageResult<u64> {
         let conn = self.conn.clone();
         tokio::task::spawn_blocking(move || -> StorageResult<u64> {
             let conn = conn.blocking_lock();
@@ -1172,11 +1110,7 @@ impl Storage {
     pub async fn run_retention_cleanup(&self) -> StorageResult<(u64, u64)> {
         let certs_deleted = self.cleanup_old_certificates(90).await?;
         let logs_deleted = self.cleanup_old_audit_logs(90).await?;
-        tracing::info!(
-            certs_deleted,
-            logs_deleted,
-            "Retention cleanup completed"
-        );
+        tracing::info!(certs_deleted, logs_deleted, "Retention cleanup completed");
         Ok((certs_deleted, logs_deleted))
     }
 }
@@ -1185,9 +1119,7 @@ impl Storage {
 // Helper functions for row conversion
 // ---------------------------------------------------------------------------
 
-fn row_to_certificate_metadata(
-    row: &rusqlite::Row,
-) -> StorageResult<CertificateMetadata> {
+fn row_to_certificate_metadata(row: &rusqlite::Row) -> StorageResult<CertificateMetadata> {
     use chrono::TimeZone;
 
     let fp_blob: Vec<u8> = row.get(0)?;
@@ -1476,7 +1408,11 @@ mod tests {
 
         storage.insert_action_directive(&row).await.unwrap();
 
-        let loaded = storage.get_action_directive("dir-001").await.unwrap().unwrap();
+        let loaded = storage
+            .get_action_directive("dir-001")
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(loaded.action_type, "alert");
         assert_eq!(loaded.severity, "high");
         assert_eq!(loaded.status, "pending");
@@ -1486,7 +1422,11 @@ mod tests {
             .update_directive_status("dir-001", "executed", None)
             .await
             .unwrap();
-        let updated = storage.get_action_directive("dir-001").await.unwrap().unwrap();
+        let updated = storage
+            .get_action_directive("dir-001")
+            .await
+            .unwrap()
+            .unwrap();
         assert_eq!(updated.status, "executed");
 
         // List by status
@@ -1538,7 +1478,10 @@ mod tests {
             resolved_at: Some(now_ms),
             ..row
         };
-        storage.upsert_shadow_certificate(&resolved_row).await.unwrap();
+        storage
+            .upsert_shadow_certificate(&resolved_row)
+            .await
+            .unwrap();
         let unresolved = storage.list_unresolved_shadow_certificates().await.unwrap();
         assert_eq!(unresolved.len(), 0);
 

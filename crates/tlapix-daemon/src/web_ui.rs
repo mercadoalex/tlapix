@@ -6,15 +6,10 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use axum::{
-    extract::State,
-    response::Html,
-    routing::get,
-    Router,
-};
+use axum::{extract::State, response::Html, routing::get, Router};
+use tlapix_common::storage::Storage;
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
-use tlapix_common::storage::Storage;
 use tracing;
 
 // ---------------------------------------------------------------------------
@@ -83,10 +78,15 @@ impl WebUiServer {
 async fn dashboard_handler(State(state): State<Arc<AppState>>) -> Html<String> {
     let cert_count = state.storage.count_certificates().await.unwrap_or(0);
     let anomaly_count = state.storage.count_pending_directives().await.unwrap_or(0);
-    let recent_actions = state.storage.list_recent_directives(5).await.unwrap_or_default();
+    let recent_actions = state
+        .storage
+        .list_recent_directives(5)
+        .await
+        .unwrap_or_default();
 
     let actions_html: String = if recent_actions.is_empty() {
-        "<tr><td colspan=\"4\" style=\"text-align:center;color:#888;\">No recent actions</td></tr>".to_string()
+        "<tr><td colspan=\"4\" style=\"text-align:center;color:#888;\">No recent actions</td></tr>"
+            .to_string()
     } else {
         recent_actions
             .iter()
@@ -153,7 +153,11 @@ async fn dashboard_handler(State(state): State<Arc<AppState>>) -> Html<String> {
 }
 
 async fn certificates_handler(State(state): State<Arc<AppState>>) -> Html<String> {
-    let certs = state.storage.list_all_certificates(100).await.unwrap_or_default();
+    let certs = state
+        .storage
+        .list_all_certificates(100)
+        .await
+        .unwrap_or_default();
 
     let rows_html: String = if certs.is_empty() {
         "<tr><td colspan=\"6\" style=\"text-align:center;color:#888;\">No certificates discovered</td></tr>".to_string()
@@ -278,7 +282,11 @@ async fn anomalies_handler(State(state): State<Arc<AppState>>) -> Html<String> {
 }
 
 async fn actions_handler(State(state): State<Arc<AppState>>) -> Html<String> {
-    let actions = state.storage.list_recent_directives(50).await.unwrap_or_default();
+    let actions = state
+        .storage
+        .list_recent_directives(50)
+        .await
+        .unwrap_or_default();
 
     let rows_html: String = if actions.is_empty() {
         "<tr><td colspan=\"6\" style=\"text-align:center;color:#888;\">No actions recorded</td></tr>".to_string()
@@ -417,7 +425,11 @@ async fn predictions_handler(State(state): State<Arc<AppState>>) -> Html<String>
 // ---------------------------------------------------------------------------
 
 fn hex_short(bytes: &[u8; 32]) -> String {
-    format!("{}..{}", hex::encode(&bytes[..3]), hex::encode(&bytes[29..]))
+    format!(
+        "{}..{}",
+        hex::encode(&bytes[..3]),
+        hex::encode(&bytes[29..])
+    )
 }
 
 fn hex_full(bytes: &[u8; 32]) -> String {
