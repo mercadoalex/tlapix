@@ -588,3 +588,141 @@ This eliminates the duplication where each module reimplements the same patterns
 | Phase 2 | Design the Go shared libraries based on common patterns across modules |
 | Phase 3 | Rewrite eBeeControl core in Go, using shared libraries |
 | Phase 4 | All Go modules share titanops-* libraries |
+
+
+---
+
+## Repository Strategy: Hybrid Multi-Repo
+
+### Decision: Keep Modules Separate, Add a Platform Repo
+
+Don't merge repos. Don't copy/paste. Each module keeps its identity, history, and independence. A new `titanops/` repo holds the platform layer (shared libraries, correlation engine, dashboard, umbrella Helm chart).
+
+### Repository Structure
+
+```
+github.com/mercadoalex/
+├── titanops/              (NEW — platform core)
+│   ├── shared/            # Shared Go libraries
+│   │   ├── titanops-ai/   #   ONNX inference, pluggable cloud backends
+│   │   ├── titanops-k8s/  #   Common K8s client patterns
+│   │   ├── titanops-ebpf/ #   Common eBPF event handling
+│   │   ├── titanops-export/ # Prometheus, OTLP, webhooks
+│   │   └── titanops-config/ # Unified config loading
+│   ├── correlation/       # Cross-module correlation engine
+│   ├── gateway/           # API gateway for the dashboard
+│   ├── dashboard/         # TitanOps React UI
+│   ├── helm/              # Umbrella Helm chart
+│   ├── docs/              # Platform-level documentation
+│   └── go.mod             # Go module: github.com/mercadoalex/titanops
+│
+├── tlapix/                (EXISTING — stays independent)
+│   └── imports: github.com/mercadoalex/titanops/shared/titanops-export
+│
+├── earthworm/             (EXISTING — stays independent)
+│   └── imports: github.com/mercadoalex/titanops/shared/titanops-k8s
+│
+├── ebeecontrol/           (EXISTING → rewrite in Go, then imports shared libs)
+│   └── imports: github.com/mercadoalex/titanops/shared/titanops-ai
+│
+└── quack/                 (EXISTING — stays independent)
+    └── imports: github.com/mercadoalex/titanops/shared/titanops-k8s
+```
+
+### Why Hybrid (Not Monorepo)
+
+| Concern | Monorepo | Hybrid (our choice) |
+|---------|----------|-------------------|
+| Module discoverability | Hidden inside one repo | Each module has its own GitHub page, stars, SEO |
+| Independent releases | Hard (everything versioned together) | Easy (each module has its own tags) |
+| Install just one module | User gets the whole monorepo | User installs only what they need |
+| Git history | Lost or complex (subtree merge) | Preserved naturally |
+| CI speed | Slow (runs everything on every change) | Fast (each repo has focused CI) |
+| Shared code | Easy (local imports) | Clean (Go modules with semver) |
+| Cross-repo changes | Atomic (one PR) | Coordinated (multiple PRs, but rare) |
+
+### How Modules Import Shared Libraries
+
+Go modules make this clean:
+
+```go
+// In earthworm/server/main.go
+import (
+    "github.com/mercadoalex/titanops/shared/titanops-export"
+    "github.com/mercadoalex/titanops/shared/titanops-k8s"
+)
+```
+
+```go
+// In quack/main.go
+import (
+    "github.com/mercadoalex/titanops/shared/titanops-ai"
+    "github.com/mercadoalex/titanops/shared/titanops-config"
+)
+```
+
+For Tlapix (Rust), shared integration happens via:
+- The Prometheus metrics format (already implemented)
+- OTLP export (already implemented)
+- The umbrella Helm chart (references Tlapix's chart as a dependency)
+
+### How the Umbrella Helm Chart Works
+
+The TitanOps Helm chart doesn't contain module code. It references each module's chart as a dependency:
+
+```yaml
+# titanops/helm/titanops/Chart.yaml
+apiVersion: v2
+name: titanops
+description: Autonomous AiOps modules for Kubernetes
+version: 0.1.0
+
+dependencies:
+  - name: tlapix
+    version: ">=0.1.0"
+    repository: "https://mercadoalex.github.io/tlapix/charts"
+    condition: tlapix.enabled
+
+  - name: earthworm
+    version: ">=0.1.0"
+    repository: "https://mercadoalex.github.io/earthworm/charts"
+    condition: earthworm.enabled
+
+  - name: ebeecontrol
+    version: ">=0.1.0"
+    repository: "https://mercadoalex.github.io/ebeecontrol/charts"
+    condition: ebeecontrol.enabled
+
+  - name: quack
+    version: ">=0.1.0"
+    repository: "https://mercadoalex.github.io/quack/charts"
+    condition: quack.enabled
+```
+
+Each module publishes its own Helm chart to its own GitHub Pages. The umbrella chart pulls them together. No code duplication.
+
+### Installation Paths
+
+| User Wants | How They Install |
+|-----------|-----------------|
+| Just Tlapix | `helm install tlapix mercadoalex/tlapix` |
+| Just Quack | `helm install quack mercadoalex/quack` |
+| Full TitanOps platform | `helm install titanops mercadoalex/titanops --set tlapix.enabled=true --set quack.enabled=true` |
+| Platform + correlation | `helm install titanops mercadoalex/titanops --set correlation.enabled=true` |
+
+### Versioning Strategy
+
+| Component | Versioning | Release Cadence |
+|-----------|-----------|-----------------|
+| Each module (tlapix, earthworm, etc.) | Independent semver | When ready |
+| Shared libraries (titanops/shared/) | Semver via Go modules | When API changes |
+| Umbrella Helm chart | Own semver | When compatibility matrix updates |
+| TitanOps Dashboard | Own semver | When UI changes |
+
+### Rules to Avoid Chaos
+
+1. **Shared libraries NEVER import modules** — dependency flows one way only (modules → shared)
+2. **Breaking changes in shared libs require a major version bump** — modules pin to compatible versions
+3. **Each module's CI tests against the latest shared libs** — catch incompatibilities early
+4. **The umbrella chart declares a compatibility matrix** — "tlapix >=0.1.0, earthworm >=0.2.0, etc."
+5. **Platform-level features (correlation, dashboard) live in titanops/ repo only** — not scattered across modules
