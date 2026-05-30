@@ -3,11 +3,15 @@ name = "tlapix-analyzer"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+onnx = ["ort"]
+
 [dependencies]
 tlapix-common = { path = "../tlapix-common" }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
-ort = { workspace = true }
+ort = { workspace = true, optional = true }
 instant-acme = { workspace = true }
 rusqlite = { workspace = true }
 reqwest = { workspace = true }

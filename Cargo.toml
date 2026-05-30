@@ -36,7 +36,7 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 x509-parser = "0.16"
 
 # AI/ML inference
-ort = "2.0.0-rc.12"
+ort = { version = "2.0.0-rc.12", features = ["download-binaries"] }
 
 # ACME client
 instant-acme = "0.7"

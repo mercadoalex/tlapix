@@ -153,8 +153,8 @@ proptest! {
 
         let (expiry_result, updated, directive_id) = result;
 
-        if hours_since_seen > 72 {
-            // Directive should be expired
+        if hours_since_seen >= 72 {
+            // Directive should be expired (at exactly 72h, timing makes it slightly over)
             prop_assert_eq!(expiry_result.expired_count, 1);
             prop_assert_eq!(expiry_result.expired_ids, vec![directive_id]);
             prop_assert_eq!(updated.status.as_str(), "expired");

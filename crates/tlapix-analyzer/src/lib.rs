@@ -1,6 +1,12 @@
 //! Tlapix Analyzer - AI-driven anomaly detection, renewal prediction, and shadow certificate identification.
 
+#[cfg(feature = "onnx")]
 pub mod ai_backend;
+#[cfg(not(feature = "onnx"))]
+pub mod ai_backend_stub;
+#[cfg(not(feature = "onnx"))]
+pub use ai_backend_stub as ai_backend;
+
 pub mod anomaly;
 pub mod inventory;
 pub mod reconciliation;
