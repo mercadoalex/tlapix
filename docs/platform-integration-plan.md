@@ -484,3 +484,107 @@ Priority 3 isn't "push metrics to Grafana." It's "push INTELLIGENCE to their too
 | PagerDuty | Rich alerts with decision chain + confidence | Responders know WHY before they look |
 
 We're not sending numbers. We're sending **decisions with explanations** that no other data source can generate.
+
+
+---
+
+## Language Strategy: Consolidation Plan
+
+### Current State
+
+| Module | Language | Justification |
+|--------|----------|---------------|
+| Tlapix | Rust | eBPF via Aya, memory safety, kernel-level performance — no alternative |
+| Earthworm | Go + TypeScript | Go for server/eBPF (cilium/ebpf), TypeScript for React visualizer |
+| eBeeControl | TypeScript | Fast prototyping, Gemini SDK — but no strong justification for backend |
+| Quack | Go | sched_ext integration, kernel proximity, client-go for K8s |
+
+### The Problem with eBeeControl in TypeScript
+
+eBeeControl is the odd one out. It's a backend agent that:
+- Monitors kernel-level file access (Tetragon/eBPF)
+- Deploys honeytokens into Kubernetes pods
+- Makes autonomous threat classification decisions
+- Responds by isolating pods and blocking IPs
+
+None of these require TypeScript. The choice was made for prototyping speed, not architectural fit. In the TitanOps platform context, this creates:
+- A different build system (npm vs go build)
+- A different test framework (Vitest vs go test)
+- No code sharing with Earthworm/Quack (which do similar K8s + eBPF work in Go)
+- A different deployment pattern (Node.js runtime vs static binary)
+
+### Decision: Rewrite eBeeControl Core in Go
+
+**Priority: Important (Phase 2-3 of platform integration)**
+
+**What to rewrite:**
+- Agent orchestrator (currently TypeScript)
+- Tetragon event processing (currently TypeScript)
+- Threat classifier (currently TypeScript + Gemini)
+- Response planner (currently TypeScript)
+- Kubernetes interactions (currently TypeScript)
+
+**What to keep or adapt:**
+- The architecture and design (proven, well-tested)
+- The 24 property-based correctness properties (reimplement in Go)
+- The Gemini integration (as optional cloud backend, not required)
+
+**Why Go:**
+- 3 of 4 modules will be Go (Earthworm, Quack, eBeeControl) — shared libraries possible
+- cilium/ebpf for Tetragon integration (same as Earthworm)
+- client-go for Kubernetes (same as Quack)
+- Static binary deployment (same as all other modules)
+- onnxruntime-go for local AI inference (unified AI layer)
+- Consistent CI/CD (go test, go build, single Dockerfile pattern)
+
+**What this gives TitanOps:**
+- Rust for kernel-critical eBPF (Tlapix) — justified, stays
+- Go for all platform services (Earthworm, eBeeControl, Quack, correlation engine, API gateway)
+- TypeScript for UI only (TitanOps React Dashboard, Earthworm visualizer)
+
+### Target Architecture After Consolidation
+
+```
+TitanOps Platform
+├── Kernel Layer (Rust)
+│   └── Tlapix eBPF programs (Aya) — stays Rust, no change
+│
+├── Platform Layer (Go)
+│   ├── Earthworm agent + server
+│   ├── eBeeControl agent (REWRITTEN from TypeScript)
+│   ├── Quack scheduler service
+│   ├── Correlation engine (NEW)
+│   ├── TitanOps API gateway (NEW)
+│   └── Shared libraries:
+│       ├── titanops-ai (ONNX inference, pluggable cloud backends)
+│       ├── titanops-k8s (common K8s client patterns)
+│       ├── titanops-ebpf (common eBPF event handling)
+│       └── titanops-export (Prometheus, OTLP, webhooks)
+│
+└── UI Layer (TypeScript/React)
+    ├── TitanOps Dashboard (NEW)
+    └── Earthworm Visualizer (existing)
+```
+
+### Shared Go Libraries (Enabled by Consolidation)
+
+Once eBeeControl is in Go, these shared libraries become possible:
+
+| Library | What It Provides | Used By |
+|---------|-----------------|---------|
+| `titanops-ai` | ONNX inference, model loading, cloud backend interface | All modules |
+| `titanops-k8s` | K8s client, secret reading, pod operations | eBeeControl, Quack, Earthworm |
+| `titanops-ebpf` | Event parsing, ring buffer reading, map operations | eBeeControl, Earthworm, Quack |
+| `titanops-export` | Prometheus metrics, OTLP export, webhook dispatch | All modules |
+| `titanops-config` | Unified config loading, validation | All modules |
+
+This eliminates the duplication where each module reimplements the same patterns independently.
+
+### Timeline
+
+| Phase | Action |
+|-------|--------|
+| Now | Keep eBeeControl in TypeScript (it works, it's tested) |
+| Phase 2 | Design the Go shared libraries based on common patterns across modules |
+| Phase 3 | Rewrite eBeeControl core in Go, using shared libraries |
+| Phase 4 | All Go modules share titanops-* libraries |
