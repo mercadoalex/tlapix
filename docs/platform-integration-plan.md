@@ -1,10 +1,12 @@
-# Platform Integration Plan: Nahual AiOps Modules
+# Platform Integration Plan: TitanOps
 
 ## Vision
 
 We don't compete with observability platforms. We add autonomous capabilities that plug into whatever stack people already use. The more integrations, the better.
 
-**Position:** "Autonomous AiOps modules for Kubernetes — install via Helm, feeds into your existing Grafana/Prometheus/Datadog/Splunk."
+**Name:** TitanOps — Autonomous AiOps modules for Kubernetes
+
+**Position:** "Your observability stack tells you what's wrong. TitanOps fixes it."
 
 ---
 
@@ -94,7 +96,7 @@ We ARE building:
 **Goal:** One chart installs all four modules (each toggleable).
 
 ```bash
-helm install nahual nahual/nahual \
+helm install titanops titanops/titanops \
   --set tlapix.enabled=true \
   --set earthworm.enabled=true \
   --set ebeecontrol.enabled=false \
@@ -112,7 +114,7 @@ helm install nahual nahual/nahual \
 ### Umbrella Chart Structure
 
 ```
-helm/nahual/
+helm/titanops/
 ├── Chart.yaml                    # Umbrella chart
 ├── values.yaml                   # Global + per-module config
 ├── charts/
