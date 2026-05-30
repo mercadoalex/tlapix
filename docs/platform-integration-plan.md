@@ -726,3 +726,65 @@ Each module publishes its own Helm chart to its own GitHub Pages. The umbrella c
 3. **Each module's CI tests against the latest shared libs** — catch incompatibilities early
 4. **The umbrella chart declares a compatibility matrix** — "tlapix >=0.1.0, earthworm >=0.2.0, etc."
 5. **Platform-level features (correlation, dashboard) live in titanops/ repo only** — not scattered across modules
+
+
+---
+
+## Versioning: Semantic Versioning (Semver)
+
+All TitanOps components follow [Semantic Versioning](https://semver.org/).
+
+### Format: `MAJOR.MINOR.PATCH` → `v1.2.3`
+
+| Part | When to Bump | Meaning | Example |
+|------|-------------|---------|---------|
+| **PATCH** (1.2.**3**) | Bug fix, no API change | Safe to upgrade blindly | Fixed a log message, patched a race condition |
+| **MINOR** (1.**2**.3) | New feature, backwards compatible | Safe to upgrade, new stuff available | Added a new endpoint, new config option |
+| **MAJOR** (**1**.2.3) | Breaking change | Requires code changes by consumers | Renamed a function, removed a field, changed behavior |
+
+### The Contract
+
+> "You can upgrade safely within the same major version."
+
+- `v0.2.1` → `v0.2.5`: always safe (patches only)
+- `v0.2.1` → `v0.3.0`: safe but check release notes (new features, possible deprecations)
+- `v0.2.1` → `v1.0.0`: breaking — read migration guide before upgrading
+
+### How It Works in Practice (Go Modules)
+
+Shared libraries in `titanops/` are versioned via git tags:
+
+```bash
+# After making a bug fix to titanops/shared/titanops-ai:
+git tag shared/v0.2.2
+git push --tags
+
+# Modules update their dependency:
+cd ../earthworm
+go get github.com/mercadoalex/titanops/shared@v0.2.2
+```
+
+No package registry needed. No npm publish. Just git tags. Go's module proxy (`proxy.golang.org`) caches it automatically and makes it available to anyone running `go get`.
+
+### Rules to Avoid Technical Debt
+
+1. **Never release v1.0.0 until the API is stable** — stay on v0.x.x during development (breaking changes are expected in v0.x)
+2. **Every breaking change bumps MAJOR** — no exceptions, no "small breaking changes"
+3. **Deprecate before removing** — mark as deprecated in v0.3.0, remove in v0.4.0 (give consumers time)
+4. **Tag every release** — no "just use main branch" — pinned versions prevent surprise breakage
+5. **CHANGELOG.md in every repo** — document what changed and why, every release
+6. **CI tests against pinned versions** — modules test against the version they declare, not latest
+
+### Version Status of TitanOps Components
+
+| Component | Current Version | Stability |
+|-----------|----------------|-----------|
+| Tlapix | v0.1.0 | API unstable (pre-v1, expect changes) |
+| Earthworm | v0.1.0 | API unstable |
+| eBeeControl | v0.1.0 | API unstable (will be rewritten in Go) |
+| Quack | v0.1.0 | API unstable |
+| TitanOps shared libs | Not yet released | Design phase |
+| TitanOps Dashboard | Not yet started | — |
+| Umbrella Helm chart | v0.1.0 | Tracks module compatibility |
+
+All components start at `v0.1.0`. The `v0.x` prefix signals: "this is under active development, APIs may change." When the platform stabilizes, individual components graduate to `v1.0.0` independently.
